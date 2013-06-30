@@ -1,0 +1,2909 @@
+%% LyX 1.3 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[oneside,spanish]{book}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+\pagestyle{plain}
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+\usepackage{varioref}
+\usepackage{float}
+\usepackage{graphicx}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+%% Bold symbol macro for standard LaTeX users
+\providecommand{\boldsymbol}[1]{\mbox{\boldmath $#1$}}
+
+\floatstyle{ruled}
+\newfloat{algorithm}{tbp}{loa}
+\floatname{algorithm}{Algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Textclass specific LaTeX commands.
+ \newcommand{\lyxaddress}[1]{
+   \par {\raggedright #1 
+   \vspace{1.4em}
+   \noindent\par}
+ }
+
+\usepackage{babel}
+\addto\extrasspanish{\bbl@deactivate{~}}
+\makeatother
+\begin{document}
+
+\title{gTurnos: módulo gestor del reparto de turnos bajo Moodle}
+
+
+\author{David Rozas Domingo}
+
+\maketitle
+\eject
+
+Copyright (c) 2007 David Rozas Domingo. Se otorga permiso para copiar,
+distribuir y/o modificar este documento bajo los términos de la Licencia
+de Documentación Libre de GNU, Versión 1.2 o cualquier otra versión
+posterior publicada por la Free Software Foundation; sin Secciones
+Invariantes ni Textos de Cubierta Delantera ni Textos de Cubierta
+Trasera. Una copia de la licencia está incluida en la sección titulada
+{}``GNU Free Documentation License''.
+
+
+\lyxaddress{\eject
+
+
+
+}
+
+\begin{quotation}
+\emph{A mi abuelo Valeriano, una auténtica mente inquieta autodidacta. }
+
+\emph{Gracias por enseñarme el placer ilimitado y atemporal del constante }
+
+\emph{aprendizaje, siempre con humildad.}
+\end{quotation}
+
+\lyxaddress{\eject}
+
+
+\chapter*{Resumen}
+
+gTurnos es un módulo que gestiona el reparto de turnos para la realización
+de exámenes presenciales, generando listas de presentación compactas
+y equilibradas. Lo realiza a través de un algoritmo sencillo, que
+permite flexibilidad al encargado de determinar los rangos de tiempo,
+y a su vez tiene en cuenta las preferencias de los solicitantes de
+turnos.
+
+Está diseñado para integrarse en Moodle, una plataforma de aprendizaje
+basada en software libre, con una base de usuarios muy amplia y en
+constante crecimiento, construida bajo principios pedagógicos constructivistas.
+
+La finalidad de la aplicación es completamente práctica, por lo que
+además se ha realizado un análisis del posible uso de gTurnos en los
+laboratorios de la universidad; con especial hincapié en los aspectos
+relacionados con seguridad, tanto de la plataforma Moodle, como de
+la aplicación en sí.
+
+Además, para intentar que la aplicación pueda ser utilizada más allá
+de los laboratorios, se ha traducido a inglés, se ha registrado en
+la sección de {}``\emph{Modules and plugins}'' del portal de Moodle,
+se han preparado manuales de uso, etc.
+
+A lo largo de este documento se describen las tecnologías empleadas
+para la creación de esta aplicación, se explica el algoritmo de reparto
+de turnos diseñado, y se detalla el proceso de diseño e implementación
+a través de prototipos y de la descripción de las funciones más importantes.
+
+Posteriormente se realiza un estudio de los diferentes entornos bajo
+los que ha sido probado, así como de los métodos de autenticación
+y de las medidas de seguridad necesarias para la utilización de la
+aplicación en los laboratorios de la universidad.
+
+Se incluyen además una serie de apéndices con los manuales de uso
+en castellano e inglés, así como los procesos de configuración de
+los módulos necesarios para implantar los métodos de seguridad y autenticación
+recomendados.
+
+\tableofcontents{}
+
+\listoffigures
+
+
+
+\chapter{Introducción}
+
+La idea para la realización de este Proyecto de Fin de Carrera surge
+de la necesidad de informatizar el proceso de reparto de turnos para
+la realización de los exámenes presenciales del GSyC. Hasta ahora
+se hacía de forma manual, colocando hojas en las puertas de los laboratorios,
+con lo que, además de la evidente incomodidad del proceso, las listas
+no resultaban compactas y con frecuencia quedaban descompensadas.
+
+Por ello, se ha diseñado un algoritmo en el que se pueden configurar
+tantos bloques de tiempo como se desee, quedando así en manos de la
+persona que decide los rangos la flexibilidad con la que se configura
+la aplicación. En cuanto a la forma de atender las preferencias de
+los solicitantes de turnos, funciona de forma similar a la de una
+cola: {}``\emph{el primero en llegar tendrá mayor preferencia a la
+hora de elegir}''%
+\footnote{En la sección \vref{sub:Algoritmo-de-reparto} se explicada detalladamente
+el funcionamiento del algoritmo.%
+}. 
+
+Una vez diseñado el algoritmo de reparto, tenemos que escoger la forma
+de implementarlo.
+
+Aunque inicialmente se barajaron otras posibilidades, como por ejemplo
+la creación de una aplicación externa que utilizara los datos de las
+cuentas de los laboratorios, finalmente se determinó realizarla sobre
+el sistema Moodle, utilizado en varias asignaturas en la universidad.
+
+Moodle es una plataforma de aprendizaje, lo que se conoce como Learning
+Managment System en inglés, basada en software libre, y que está en
+continuo crecimiento.\\
+Programar para Moodle supone inicialmente un mayor esfuerzo de aprendizaje,
+al tener que sumergirnos en un sistema tan amplio. Pero, una vez realizado
+dicho esfuerzo, todo lo que nos ofrece son ventajas, ya que nos permite
+aprovechar todo el potencial del sistema, se logra que la aplicación
+pueda tener un uso más general, etc.
+
+A continuación se describen las tecnologías empleadas para la realización
+del proyecto gTurnos.
+
+\eject
+
+
+\section{Moodle}
+
+Moodle es un sistema de gestión de la enseñanza también denominado
+\char`\"{}Entorno Virtual de Enseñanza-Aprendizaje (EVEA)\char`\"{},
+o {}``Learning Management System'' (LMS) en inglés; es decir, una
+aplicación diseñada para ayudar a los educadores a crear cursos de
+calidad en línea. Estos tipos de sistema de aprendizaje a distancia
+a veces son también llamados ambientes de aprendizaje virtual o de
+educación en línea.
+
+En términos de arquitectura, se trata de una aplicación web que puede
+funcionar en cualquier computador en el que pueda correr PHP.
+
+Moodle fue creado por Martin Dougiamas, quien trabajó como administrador
+de WebCT%
+\footnote{WebCT es un sistema comercial de aprendizaje virtual, recientemente
+adquirido por la empresa BlackBoard.%
+} en la Universidad Curtin, y se basó en trabajos sobre el constructivismo
+en pedagogía, que afirman que el conocimiento se construye en la mente
+del estudiante en lugar de ser transmitido sin cambios a partir de
+libros o enseñanzas. Un profesor que opera desde este punto de vista
+crea un ambiente centrado en el estudiante que le ayuda a construir
+ese conocimiento en base a sus habilidades y conocimientos propios,
+en lugar de simplemente publicar y transmitir la información que considera
+que los estudiantes deben conocer.
+
+Esta herramienta ha venido evolucionando desde 1999, produciéndose
+nuevos lanzamientos muy frecuentemente. A diciembre de 2006, la base
+de usuarios registrados incluye 19.000 sitios en más de 150 países
+y está traducido a 75 idiomas. Además existen actualmente 35 sitios
+con más de 20.000 alumnos.
+
+Tal y como muestra la siguiente figura, el crecimiento de Moodle es
+vertiginoso. A la izquierda se puede ver el número de {}``sitios
+Moodle'' conocidos en los últimos tres años, y a la derecha el número
+de usuarios registrados en el portal Moodle.org desde diciembre de
+2001.
+
+%
+\begin{figure}[H]
+\includegraphics[%
+  scale=0.4]{screenshots/moodle-sites.png}~~\includegraphics[%
+  scale=0.4]{screenshots/moodle-users.png}
+
+
+\caption{Gráficos que muestran el crecimiento de Moodle}
+\end{figure}
+
+
+La palabra Moodle era al principio un acrónimo de Modular Object-Oriented
+Dynamic Learning Environment (Entorno de Aprendizaje Dinámico Orientado
+a Objetos y Modular), lo que resulta fundamentalmente útil para programadores
+y teóricos de la educación. También es un verbo que describe el proceso
+de deambular perezosamente a través de algo, y hacer las cosas cuando
+se te ocurre hacerlas, una placentera chapuza que a menudo te lleva
+a la visión y la creatividad. Las dos acepciones se aplican tanto
+a la manera en que se desarrolló Moodle, como a la forma en que un
+estudiante o profesor puede aproximarse al estudio o enseñanza de
+un curso en línea.
+
+Moodle se distribuye bajo la licencia GNU GPL. Esta es la razón, junto
+a la creciente comunidad de usuarios y desarrolladores que la mantiene,
+que nos llevó a elegir dicha plataforma como base para realizar el
+proyecto gTurnos.
+
+Existen muchas otros sistemas LMS, tanto libres como Claroline, o
+en forma de software propietario como BlackBoard%
+\footnote{Para más información sobre otros LMS:
+
+\begin{itemize}
+\item Catálogo de LMS con fichas de evaluación: \emph{http://www.ossite.org/join/sp/lms}
+\item Estudio de herramientas para la tele-enseñanza, de la Universidad
+Politécnica de Madrid: \emph{http://www.gate.upm.es/plataformas/herramientastele/index.htm}
+\end{itemize}
+%
+}.
+
+\eject
+
+
+\section{PHP}
+
+El lenguaje de programación que utiliza Moodle es PHP.
+
+PHP es un acrónimo recurrente que significa \char`\"{}PHP Hypertext
+Pre-processor\char`\"{} (inicialmente PHP Tools, o, Personal Home
+Page Tools), y se trata de un lenguaje interpretado usado para la
+creación de aplicaciones para servidores, o creación de contenido
+dinámico para sitios web. Permite también la creación de otro tipo
+de programas, incluyendo aplicaciones con interfaz gráfica usando
+la biblioteca GTK+%
+\footnote{\emph{GTK+, es un grupo importante de bibliotecas o rutinas para desarrollar
+interfaces gráficas de usuario (GUI) para los entornos gráficos GNOME,
+XFCE y ROX de sistemas Linux. Es software libre (bajo la licencia
+LGPL), multiplataforma y parte importante del proyecto GNU.}
+
+\emph{Fuente: Wikipedia (adaptación)}%
+}; o ser usado desde la línea de comandos, como Perl o Python.
+
+El fácil uso y la similitud con los lenguajes más comunes de programación
+estructurada, como C y Perl, permiten a los programadores crear aplicaciones
+complejas con una curva de aprendizaje muy suave. También les permite
+involucrarse con aplicaciones de contenido dinámico sin tener que
+aprender todo un nuevo grupo de funciones y prácticas.
+
+Su interpretación y ejecución se da en el servidor, en el cual se
+encuentra almacenado el script, y el cliente sólo recibe el resultado
+de la ejecución. Cuando el cliente hace una petición al servidor para
+que le envíe una página web, generada por un script PHP, el servidor
+ejecuta el intérprete de PHP, el cual procesa el script solicitado
+que generará el contenido de manera dinámica, pudiendo modificar el
+contenido a enviar, y regresa el resultado al servidor, el cual se
+encarga de regresárselo al cliente. Además es posible utilizar PHP
+para generar archivos PDF, Flash, así como imágenes en diferentes
+formatos, entre otras cosas.
+
+%
+\begin{figure}[H]
+\includegraphics[%
+  scale=0.45]{php.png}
+
+
+\caption{Funcionamiento de PHP}
+\end{figure}
+
+
+Permite la conexión a diferentes tipos de servidores de bases de datos
+tales como MySQL, PostgreSQL, Oracle, ODBC, DB2, Microsoft SQL Server,
+Firebird y SQLite; lo cual permite la creación de aplicaciones web
+muy robustas.
+
+PHP también tiene la capacidad de ser ejecutado en la mayoría de los
+sistemas operativos tales como UNIX (y de ese tipo, como Linux), Windows
+y Mac OS X, y puede interactuar con los servidores web más populares
+ya que existe en versión CGI, módulo para Apache, e ISAPI.
+
+El modelo PHP puede ser visto como una alternativa al sistema de Microsoft
+que utiliza ASP.NET/C\#/VB.NET, a ColdFusion de la compañía Macromedia,
+a JSP/Java de Sun Microsystems, y al famoso CGI/Perl. Aunque su creación
+y desarrollo se da en el ámbito de los sistemas libres, bajo la licencia
+GNU, existe además un IDE comercial llamado Zend Optimizer.
+
+\eject
+
+
+\section{MySQL}
+
+El sistema gestor de base de datos más utilizado en Moodle es MySQL,
+aunque también ofrece soporte para PostgreSQL; y para Oracle y Microsoft
+SQL Server en la versión 1.7 lanzada el 7 de noviembre de 2006.
+
+MySQL es un sistema gestor de base de datos, multihilo y multiusuario
+con más de seis millones de instalaciones, desarrollado en su mayor
+parte en ANSI C.
+
+MySQL AB desarrolla MySQL como software libre en un esquema de licenciamiento
+dual. Por un lado lo ofrece bajo la GNU GPL, pero las empresas que
+quieran incorporarlo en productos privativos pueden comprar una licencia
+que les permita ese uso.
+
+Existen varias APIs que permiten, a aplicaciones escritas en diversos
+lenguajes de programación, acceder a las bases de datos MySQL, incluyendo
+C, C++, C\#, Pascal, Delphi (via dbExpress), Eiffel, Smalltalk, Java
+(con una implementación nativa del driver de Java), Lisp, Perl, PHP,
+Python, Ruby, REALbasic (Mac), FreeBASIC, y Tcl; cada uno de estos
+utiliza una API específica. También existe un interfaz ODBC, llamado
+MyODBC que permite a cualquier lenguaje de programación que soporte
+ODBC comunicarse con las bases de datos MySQL.
+
+MySQL es muy utilizado en aplicaciones web como MediaWiki o Drupal,
+en plataformas (Linux/Windows-Apache-MySQL-PHP/Perl/Python), y por
+herramientas de seguimiento de errores como Bugzilla. Su popularidad
+como aplicación web está muy ligada a PHP, que a menudo aparece en
+combinación con MySQL.
+
+MySQL es una base de datos muy rápida en la lectura cuando utiliza
+el motor no transaccional MyISAM, pero puede provocar problemas de
+integridad en entornos de alta concurrencia en la modificación. En
+aplicaciones web hay baja concurrencia en la modificación de datos
+y en cambio el entorno es intensivo en lectura de datos, lo que hace
+a MySQL ideal para este tipo de aplicaciones.
+
+Poco a poco los elementos de los que carecía MySQL están siendo incorporados
+tanto por desarrollos internos, como por desarrolladores de software
+libre. Entre las características disponibles en las últimas versiones
+se puede destacar:
+
+\begin{itemize}
+\item Amplio subconjunto del lenguaje SQL.
+\item Disponibilidad en gran cantidad de plataformas y sistemas.
+\item Diferentes opciones de almacenamiento según si se desea velocidad
+en las operaciones o el mayor número de operaciones disponibles.
+\item Transacciones y claves foráneas.
+\item Conectividad segura.
+\item Búsqueda e indexación de campos de texto.
+\end{itemize}
+\eject
+
+
+\section{PAM}
+
+PAM (Pluggable Authentication Module) es un mecanismo que proporciona
+una interfaz entre las aplicaciones de usuario y diferentes métodos
+de autenticación.
+
+Mediante PAM podemos comunicar a nuestra aplicaciones con los métodos
+de autenticación que deseemos de una forma transparente, lo que permite
+integrar las utilidades de un sistema Unix clásico (login, ftp, telnet,
+etc.) con esquemas diferentes del habitual password: claves de un
+solo uso, biométricos, tarjetas inteligentes, etc.
+
+En nuestro caso, es el método escogido para realizar la autentificación
+de los usuarios de Moodle%
+\footnote{En el apartado \vref{sub:Autenticaci=F3n-con-m=F3dulo} se realiza
+un análisis de los métodos disponibles para la autenticación en Moodle,
+y se describen las razones por las que se recomienda PAM.%
+}, para lo cual utilizamos el módulo \emph{pam\_auth}, que permite
+comunicarnos con la interfaz PAM a través de PHP.
+
+PAM viene ''de serie'' en diferentes sistemas Unix, tanto libres
+como comerciales (Solaris, FreeBSD, casi todas las distribuciones
+de Linux, etc.), y el nivel de abstracción es muy flexible, permitiendo
+desde kerberizar%
+\footnote{Hace referencia a la utilización de Kerberos, un protocolo de autenticación
+que permite a dos computadores demostrar su identidad de manera segura
+mediante el empleo de ''tickets''.
+
+\emph{Fuente: Wikipedia (adaptación)}%
+} nuestra autenticación en el lado del servidor, utilizar servidores
+LDAP%
+\footnote{LDAP es un protocolo de red que permite el acceso a un directorio
+distribuido con información sobre el entorno de red. 
+
+\emph{Fuente: Wikipedia (adaptación})%
+}, etc. sin más que cambiar la configuración de PAM.
+
+\eject
+
+
+\section{HTTPS}
+
+El problema al que nos enfrentamos es la posible intercepción de datos
+sensibles de los usuarios, como la información de las cuentas de los
+laboratorios.
+
+Para evitarlo, se aconseja el uso de HTTPS, que es la versión segura
+del protocolo HTTP.
+
+El sistema HTTPS utiliza un cifrado basado en las Secure Socket Layers
+(SSL), protocolo que proporciona autenticación y privacidad de la
+información entre extremos sobre Internet mediante el uso de criptografía
+sobre la capa de transporte.
+
+HTTP trabaja sobre TCP/IP, protocolos que se encargan de enviar la
+información de una máquina a otra realizando saltos a través de los
+routers que se encuentran entre origen y destino. Dicha información
+puede ser capturada en su camino con fines malintencionados.
+
+SSL se coloca entre el nivel de transporte (TCP) y el nivel de aplicación
+(HTTP), creando un canal cifrado más apropiado para el tráfico de
+información sensible que el protocolo HTTP.\\
+De esta forma, aunque no evitamos que la información pueda ser capturada,
+sí que impedimos que pueda conocerse su contenido.
+
+Además con HTTPS se resuelve el problema de la autentificación del
+servidor, es decir asegurarnos de que el servidor al que nos vamos
+a conectar es {}``el que realmente dice ser''. Para ello se utilizan
+certificados, documentos firmados por una entidad certificadora que
+nos garantiza que el servidor es el auténtico. Existe la posibilidad
+de crear certificados auto-firmados con herramientas como OpenSSL,
+tal y como hicimos para realizar nuestras pruebas. Esto ahorra el
+desembolso a la autoridad certificadora, pero el cliente no tendrá
+la seguridad de que el servidor con el que se está conectando es el
+correcto.
+
+Entre las diferencias entre HTTP y HTTPS se encuentran el uso de un
+puerto diferente (el 443, en lugar del 80), y la necesidad de un proceso
+previo en el que se negocian las opciones de cifrado, conexión y versión
+de SSL entre el servidor y el cliente.
+
+Cabe mencionar que el uso del protocolo HTTPS no impide que se pueda
+utilizar HTTP. Es aquí, cuando nuestro navegador nos advertirá sobre
+la carga de elementos no seguros (HTTP), estando conectados a un entorno
+seguro (HTTPS).
+
+En nuestro caso, el uso de HTTPS se realiza en el proceso de autentificación
+de usuarios a la entrada de Moodle, evitando que la información de
+las cuentas viaje en claro%
+\footnote{El estudio y la forma de uso de HTTPS en el proceso de login de Moodle
+se detallan en la sección \vref{sub:Moodle-con-SSL}.%
+}.
+
+\eject
+
+
+\section{Apache}
+
+El servidor HTTP Apache es un servidor de código abierto, multiplataforma
+y con una estructura muy modular.
+
+La historia de Apache se remonta a febrero de 1995, basándose inicialmente
+en el código de NSCA. El desarrollo de esta aplicación se estancó
+por algún tiempo, por lo que varios webmaster siguieron creando sus
+parches para sus servidores web hasta que se contactaron vía email
+para seguir en conjunto el mantenimiento del servidor web, fue ahí
+cuando formaron el grupo Apache.\\
+Su nombre se debe a que originalmente Apache consistía solamente en
+un conjunto de parches a aplicar al servidor de NCSA. Era, en inglés,
+\emph{{}``a patchy server''} (un servidor \char`\"{}parcheado\char`\"{}).
+Posteriormente se reescribió el código por completo. 
+
+Fueron Brian Behlendorf y Cliff Skolnick quienes a través de una lista
+de correo coordinaron el trabajo y lograron establecer un espacio
+compartido de libre acceso para los desarrolladores.
+
+Fue así como fue creciendo hasta lo que es hoy. Aquella primera versión
+y sus sucesivas evoluciones y mejoras alcanzaron una gran implantación
+como software de servidor, inicialmente sólo para sistemas operativos
+UNIX, y fruto de esa evolución surgió una versión para Windows . 
+
+El servidor Apache se desarrolla dentro del proyecto HTTP Server (httpd)
+de la Apache Software Foundation.
+
+Apache presenta entre otras características mensajes de error altamente
+configurables, bases de datos de autenticación y negociado de contenido,
+gran configurabilidad en la creación y gestión de logs, etc.
+
+Tiene amplia aceptación en la red: Apache es el servidor HTTP más
+usado, siendo el servidor del 70\% de los sitios web en el mundo,
+y permaneciendo en constante crecimiento.
+
+La versión utilizada fue la 2.2. El núcleo 2.x de Apache tiene varias
+mejoras clave sobre el núcleo de Apache 1.x. Estas mejoras incluyen
+threads de UNIX, mejor soporte para plataformas no Unix (como Windows),
+un nuevo API, y soporte de IPv6, entre otras.
+
+La arquitectura del servidor Apache es muy modular. El servidor consta
+de un sección core y muchas de las funcionalidades que podrían considerarse
+básicas para un servidor web se proveen a través de módulos.
+
+Algunos de los módulos que hemos utilizado para el proyecto han sido
+mod\_php, que permite la generación de páginas dinámicas en PHP, o
+mod\_ssl, para conseguir comunicaciones seguras en el proceso de autenticación.
+
+
+\chapter{Objetivos}
+
+El objetivo es crear una aplicación capaz de realizar un distribución
+adecuada de rangos de tiempo, considerando además un sistema de prioridades
+que premie las preferencias de aquellos que decidan solicitar su turno
+primero.
+
+Asímismo, puesto que la aplicación podría ser utilizada en los laboratorios
+de la universidad, era necesario un análisis de su posible aplicación
+y de las medidas de seguridad necesarias, tanto las que atañen a la
+aplicación en sí, como las que afectan al sistema de seguridad de
+Moodle.
+
+Por tanto, los requisitos a cubrir por el proyecto son:
+
+\begin{itemize}
+\item Diseñar un algoritmo que realice un reparto de turnos justo.
+\item Implementar dicho algoritmo sobre el sistema Moodle.
+\item La aplicación debe ser segura, evitando posibles ataques de inyección
+SQL%
+\footnote{Ataques de inyección de SQL, ataques basados en la inserción de código
+SQL ''invasor'' dentro de otro código SQL para alterar su funcionamiento
+normal, logrando que se ejecute el código ''invasor'' en la base
+de datos.
+
+El origen del ataque, es el filtrado incorrecto de las variables utilizadas
+en las partes del programa con código SQL.
+
+\emph{Fuente: Wikipedia (adaptación)}%
+}, ataques XSS%
+\footnote{Ataques XSS (Cross Site Scripting), son ataques basados en la vulnerabilidad
+del sistema de validación de HTML incrustado. El problema es que no
+se valida correctamente.
+
+Esta vulnerabilidad puede estar presente de forma directa (foros,
+mensajes de error) o indirecta (redirecciones, frameset), siendo la
+última la forma más común.
+
+\emph{Fuente: Wikipedia (adaptación)}%
+}, etc.
+\item El diseño de la aplicación debe ser modular, y seguir las pautas propuestas
+por Moodle.
+\item Debe ser lo más portable posible para poder funcionar bajo diversos
+sistemas operativos, distintas versiones de Moodle, del lenguaje de
+programación, etc.
+\item La interfaz de uso de la aplicación debe ser sencilla.
+\item Analizar los métodos de autenticación para su posible implantación
+en los laboratorios, y dar una recomendación argumentada.
+\item Analizar la seguridad de las diferentes versiones de Moodle respecto
+a la información de las cuentas, y dar recomendaciones de uso de forma
+argumentada.
+\end{itemize}
+
+\chapter{Descripción informática}
+
+
+\section{\label{sec:Especificaci=F3n}Especificación}
+
+A continuación, se detallan los requisitos del proyecto gTurnos. La
+manera en que se han cumplido dichos requisitos se detalla en las
+secciones posteriores de este documento.
+
+
+\subsection{Distribución de turnos adecuada para el profesor}
+
+Uno de los requisitos del proyecto era que la distribución de los
+turnos fuera conveniente para el profesor, de manera que el reparto
+de turnos se realizara de forma compacta.
+
+Con un modelo no informatizado como el anterior, en las listas podría
+haber huecos libres y dispersión, provocando pérdidas de tiempo, ineficiencia,
+etc.
+
+Con gTurnos el profesor tiene flexibilidad para configurar los bloques
+de entrega disponibles, y se asegura que la lista generada es compacta.
+
+
+\subsection{Distribución de turnos adecuada para el alumno}
+
+Otro de los requisitos indispensables era respetar las preferencias
+de los alumnos, y dar prioridad en función del orden de llegada. 
+
+Una vez el profesor decide los bloques de turnos, los alumnos pueden
+registrarse en dichos bloques indicando preferencias de temporalidad:
+\emph{lo antes posible} o lo \emph{más tarde posible}.
+
+
+\subsection{Integración en Moodle}
+
+Otro de los objetivos era encajar dicha funcionalidad en el LMS Moodle.
+Para ello, el gestor de turnos se ha realizado heredando de la clase
+\emph{block\_list}%
+\footnote{En la sección ''Esquema general de la aplicación'', se comentan
+los detalles de esta clase.%
+} de Moodle. La integración con el sistema de esta forma es total,
+pudiendo aprovechar todas las funcionalidades del API de Moodle.
+
+
+\subsection{Modularidad}
+
+El diseño del proyecto es completamente modular, lo cual nos permite
+resolver los problemas más fácilmente, así como una mejor reusabilidad
+y depuración del código.
+
+
+\subsection{Seguridad de la aplicación}
+
+Dado que la aplicación podría sufrir ataques XSS, inyección SQL, etc.
+se ha puesto hincapié en diseñar la aplicación con todos los métodos
+de defensa disponibles para evitar todo este tipo de ataques.
+
+
+\subsection{Seguridad y autenticación de Moodle para su uso en los laboratorios}
+
+Se ha estudiado la seguridad de las últimas versiones de Moodle en
+el proceso de logueo, y se comentarán recomendaciones en caso de uso
+en los laboratorios de la universidad.
+
+Asimismo, se ha realizado un estudio de las formas de autenticación,
+y se comentarán recomendaciones de configuración.
+
+
+\subsection{Sencillez de uso}
+
+Otro objetivo consistía en que el uso e instalación de la aplicación
+fuera sencillo. 
+
+La instalación se lleva a cabo como cualquier otro bloque de Moodle,
+y la configuración y consulta realizadas por el profesor se realizan
+a través de una sencilla interfaz web.
+
+El proceso de registro del alumno se lleva a cabo a través de un formulario
+en dos sencillos pasos, y la visualización de la información es directa,
+en cuanto se accede al curso.
+
+
+\subsection{Difusión de la aplicación e internacionalización}
+
+Otro objetivo era intentar que la aplicación pueda ser útil más allá
+de su uso en los laboratorios. Por ello el proyecto se alojó en sourceforge.net
+bajo licencia GPL, y se ha registrado en la sección ''\emph{Modules
+and plugins}'' de www.moodle.org
+
+Para una mayor difusión, se encuentra disponible en castellano y en
+inglés.
+
+Además, gracias al uso de PHP, la aplicación es multiplataforma.
+
+\eject
+
+
+\section{Diseño e implementación}
+
+Para el diseño de la aplicación se ha recurrido a un modelo de desarrollo
+en espiral, dando lugar a varios prototipos de la aplicación.
+
+En esta sección se describirán brevemente los prototipos más importantes,
+y posteriormente se da una explicación más detallada de las características
+de la última versión.
+
+
+\subsection{Prototipos}
+
+
+\subsubsection{Primer prototipo : registro de alumnos y generación de lista sencilla}
+
+El primer prototipo de gTurnos constaba de las clases necesarias para
+: 
+
+\begin{itemize}
+\item Configuración de un único bloque de entrega por parte del profesor. 
+\item Registro por parte del alumno en el bloque de entrega, teniendo en
+cuenta sus preferencias.
+\item Generación de una lista ordenada para dicho bloque, y acceso a dicha
+lista desde el menú de la aplicación del profesor.
+\end{itemize}
+Se trataba de un prototipo muy sencillo, con una sola tabla en la
+base de datos, pero que fue muy importante para ir acercándose a la
+programación de un bloque para Moodle.
+
+En esta fase se determinó la herencia de la clase \emph{block\_list}%
+\footnote{En la sección \vref{sub:Esquema-general-de-la-aplicacion}, se comentan
+los detalles de esta clase.%
+} configurada como instancia única, lo cuál se mantendrá a lo largo
+del resto del desarrollo.
+
+
+\subsubsection{Segundo prototipo : gestor de turnos operativo}
+
+Con el segundo prototipo se añadieron nuevas características que lo
+hacían completamente operativo, pero no seguro.
+
+En cuanto al sistemas de configuración del profesor, se añadieron
+las siguientes funcionalidades: 
+
+\begin{itemize}
+\item Posibilidad de generar n bloques de corrección.
+\item Elección de la duración del turno.
+\item Elección del número de correctores simultáneos.
+\item Visualización de información de registro de alumnos.
+\item Posibilidad de hacer definitiva la lista.
+\item Visualización de la tabla completa provisional/definitiva.
+\end{itemize}
+En cuanto al sistema de registro y visualización del alumno:
+
+\begin{itemize}
+\item Visualización de la información de entrega provisional o definitiva
+en el menú principal.
+\item Generación dinámica de la lista. De esta forma conseguimos que el
+alumno visualice la información de entrega provisional en cuanto acaba
+el registro.
+\end{itemize}
+Con el diseño de este prototipo, se tomaron las decisiones de diseño
+más importantes: diseño del algoritmo de ordenación de la lista, diseño
+del modelo de la base de datos, etc. Todos estos aspectos se detallarán
+posteriormente.
+
+
+\subsubsection{Tercer prototipo : gestor de turnos seguro y autoinstalable}
+
+En el último prototipo se añadieron las siguientes características:
+
+\begin{itemize}
+\item Medidas de seguridad internas: verificación del tipo de usuario, uso
+de sesiones, etc.
+\item Codificación de clases y scripts SQL necesarios para la instalación
+automática.
+\item Sobreescritura de métodos y codificación de scripts SQL necesarios
+para la desinstalación automática.
+\item Uso de métodos y creación de clases necesarias para la internacionalización
+de la aplicación.
+\end{itemize}
+Los detalles más importantes de estas características se detallan
+igualmente a lo largo de las secciones siguientes.
+
+\eject
+
+
+\subsection{\label{sub:Algoritmo-de-reparto}Algoritmo de reparto de turnos}
+
+En este apartado se detalla el funcionamiento del algoritmo de reparto
+de turnos, incluyendo esquemas gráficos.
+
+La implementación de dicho algoritmo se lleva a cabo en la función
+\emph{ordenar\_lista}, que forma parte del fichero \emph{lib.php}.
+
+La notación para los esquemas gráficos es: $Preferencia_{Orden}$
+
+Siendo:
+
+\begin{itemize}
+\item Preferencia: P = pronto o ''\emph{lo antes posible}'', T = tarde
+o ''\emph{lo más tarde posible}''.
+\item Orden: Orden de llegada del alumno.
+\end{itemize}
+Ejemplo: Si el tercer alumno en registrarse escogió ''\emph{lo más
+tarde posible}'', se representaría: $T_{3}$.\\
+
+
+\begin{itemize}
+\item La entrada recibida es un array de alumnos pertenecientes a cierto
+bloque, que están ordenados por orden de llegada, pero no por preferencias:\\
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.55]{algoritmo_01.png}
+
+
+\caption{Reparto de turnos: entrada de array desordenado}
+\end{figure}
+
+\item Recorremos la lista y creamos dos sublistas en función de las preferencias.
+La sublista P se generará agregando los elementos por el final, mientras
+que la sublista T se generará añadiendo los elementos por el principio:\\
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.55]{algoritmo_02.png}
+
+
+\caption{Reparto de turnos: ordenación en sublistas}
+\end{figure}
+
+\item La lista final ordenada se obtiene fusionando las dos sublistas anteriores:
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.55]{algoritmo_03.png}
+
+
+\caption{Reparto de turnos: fusión final}
+\end{figure}
+
+
+El pseudocódigo del algoritmo es el siguiente:
+
+%
+\begin{algorithm}[H]
+
+\caption{Algoritmo de reparto de turnos}
+
+\begin{itemize}
+\item Inicialización de sublistas: $L_{pronto}$, $L_{tarde}$, $L_{ordenada}$
+\item Para cada alumno
+
+\begin{itemize}
+\item Si el alumno escogió pronto
+
+\begin{itemize}
+\item \emph{Push} del alumno en $L_{pronto}$
+\end{itemize}
+\item Y si el alumno escogió tarde
+
+\begin{itemize}
+\item \emph{Shift} del alumno en $L_{tarde}$
+\end{itemize}
+\end{itemize}
+\item Para cada alumno de $L_{pronto}$
+
+\begin{itemize}
+\item \emph{Push} del alumno en $L_{resultado}$
+\end{itemize}
+\item Para cada alumno de $L_{tarde}$
+
+\begin{itemize}
+\item \emph{Push} del alumno en $L_{resultado}$
+\end{itemize}
+\end{itemize}
+
+\end{algorithm}
+
+
+La complejidad de dicho algoritmo es \emph{O(n)}.
+
+\eject
+
+
+\subsection{Modelo de la base de datos}
+
+A continuación se presenta el modelo de la base de datos, y se comenta
+su diseño.
+
+%
+\begin{figure}[H]
+\includegraphics[%
+  scale=0.5]{modelo_definitivo.png}
+
+
+\caption{Modelo de la base de datos}
+\end{figure}
+
+
+El modelo es bastante sencillo, constando simplemente de dos tablas:
+\emph{mdl\_user\_bloque} y \emph{mdl\_bloques\_entrega}.\\
+Las tablas que aparecen en la parte superior de la figura son una
+representación simplificada de las tablas \emph{mdl\_user} y \emph{mdl\_course}
+de Moodle, que en realidad tienen muchos más campos.
+
+Existen tres relaciones:
+
+\begin{itemize}
+\item \emph{Un curso puede tener 0..n bloques de entrega}, lo cual se representa
+en la relación \emph{contiene} entre las tablas \emph{mdl\_course}
+y \emph{mdl\_bloques\_entrega.}
+\item \emph{Un alumno puede registrarse en 0..1 bloques de entrega de un
+curso}, lo cual se representa en la relación \emph{se\_registra} entre
+las tablas \emph{mdl\_user} y \emph{mdl\_user\_bloque}.
+\item \emph{Un bloque de entrega tiene registrados de 0..n alumnos}, lo
+cual se representa en la relación \emph{hay\_registrados} entre las
+tablas \emph{mdl\_user\_bloque} y \emph{mdl\_bloques\_entrega}.
+\end{itemize}
+Respecto a las opciones de borrado y actualización, son en cascada
+en ambas tablas.\\
+\\
+En cuanto a los tipos de campos, destacar los referentes a las fechas
+y horas:
+
+\begin{itemize}
+\item Se ha usado el tipo TIME para todas las horas, ya que es bastante
+cómodo para trabajar en PHP.
+\item Se ha usado el tipo DATE para trabajar con las fechas. En el SGBD
+MySQL se almacenan internamente en formato YYYYMMDD. Por ello ha sido
+necesario el uso de funciones como \emph{date()}, \emph{strtotime(),}
+etc\emph{.} de las librerías estándar de PHP, para realizar las inserciones
+y selecciones en la base de datos.
+\end{itemize}
+\eject
+
+
+\subsection{\label{sub:Esquema-general-de-la-aplicacion}Esquema general de la
+aplicación}
+
+A continuación se muestra un diagrama con la estructura de los ficheros
+más importantes, y se realiza una descripción de los mismos.
+
+Se han omitido los ficheros de idiomas, los que contienen los scripts
+de instalación, etc.
+
+%
+\begin{figure}[H]
+\includegraphics[%
+  scale=0.3]{diagrama_clases.png}
+
+
+\caption{Diagrama de los ficheros más importantes.}
+\end{figure}
+
+
+\begin{itemize}
+\item \textbf{block\_gturnos:} es la implementación de la clase del bloque,
+que hereda de la clase \emph{block\_list.php}. \\
+El uso de esta clase, que hereda de la clase \emph{block\_base}, nos
+permite generar un menú a partir de dos arrays indexados que deben
+contener el mismo número de elementos, uno con los enlaces y el otro
+con los iconos.\\
+En cuanto a la elección de diseñarlo como instancia única, se debe
+a la relación 1:1 entre cursos y gestor de turnos: \emph{un curso
+tendrá activo un gestor de turnos en un instante de tiempo}. Cuando
+el gestor no sea necesario se eliminará, y si posteriormente se requiere
+uno nuevo se volverá a instanciar y configurar con nuevos parámetros.\\
+El método más importante es \emph{get\_content()}, a partir del cual
+se genera el menú de la aplicación. 
+\item Para el profesor se muestran las opciones:
+
+\begin{itemize}
+\item Configurar bloques de entrega.
+\item Ver alumnos por orden de registro.
+\item Vista previa de lista de entrega.
+\item Cerrar lista de entrega.
+\end{itemize}
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/menu_profe.png}
+
+
+\caption{Menú principal de gTurnos mostrado al profesor.}
+\end{figure}
+
+
+\begin{itemize}
+\item Mientras que al alumno se le muestra:
+
+\begin{itemize}
+\item Enlace a formulario de registro, si no está registrado.
+\item Información acerca de su fecha de entrega, si ya está registrado.
+\end{itemize}
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/alumno_no_registrado.png}~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/alumno_registrado.png}
+
+
+\caption{Información visualizada por el alumno}
+\end{figure}
+
+
+\begin{itemize}
+\item \textbf{registro\_bloque.php}: presenta un formulario para registrar
+nuevos bloques e informa acerca de los bloques configurados actualmente.
+La información de los bloques es:
+
+\begin{itemize}
+\item Día de entrega.
+\item Duración de cada turno (en minutos).
+\item Número de correctores.
+\item Número total de plazas.
+\item Número de plazas ocupadas actualmente.
+\item Estado. Existen tres posibles estados : 
+
+\begin{itemize}
+\item \emph{Abierto}: No se ha cerrado, y hay plazas disponibles.
+\item \emph{Completo}: No se ha cerrado, pero ya no hay plazas disponibles,
+por lo que no se mostrará a los alumnos que se registren posteriormente.
+\item \emph{Cerrado}: Hubiera plazas o no, ya no es accesible por parte
+de los alumnos.
+\end{itemize}
+\end{itemize}
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.4]{screenshots/configurar_bloques.png}
+
+
+\caption{Panel de configuración de bloques}
+\end{figure}
+
+
+\begin{itemize}
+\item \textbf{confirmar\_guardar\_bloque.php}: recoge los datos de \emph{registro\_bloque.php}
+y realiza la validación. Si alguno de los campos no es correcto, retorna
+a \emph{registro\_bloque.php}.\\
+Si todo es correcto, se presenta un \emph{notice\_yesno} con la información
+que se va a grabar en la base de datos y se solicita su confirmación.
+\item \textbf{guardar\_bloque.php}: recoge los datos enviados por el fichero
+anterior, y los guarda en la base de datos. Concretamente en la tabla
+\emph{mdl\_bloques\_entrega}.
+\item \textbf{bloque\_entrega.php}: clase con los atributos necesarios para
+realizar la inserción de un bloque en la base de datos.
+\item \textbf{ver\_alumnos.php}: muestra la información de todos los alumnos
+registrados actualmente, realizando una consulta a la tabla \emph{mdl\_user\_bloque}.
+\\
+Se muestra, agrupados por bloques, su nombre, preferencia y hora de
+registro en el bloque de entrega.
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/ver_alumnos.png}
+
+
+\caption{Información acerca del registro de los alumnos}
+\end{figure}
+
+
+\begin{itemize}
+\item \textbf{vista\_previa.php}: muestra una vista previa de la lista de
+entrega, agrupando a los alumnos por bloques, y mostrando su hora
+de entrega y su nombre.
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/vista_previa.png}
+
+
+\caption{Vista previa de la lista de entrega}
+\end{figure}
+
+
+\begin{itemize}
+\item \textbf{confirmar\_cerrar.php:} muestra un \emph{notice\_yesno} para
+solicitar la confirmación del cierre de todos los bloques de ese turno,
+e informando de cuales son las consecuencias.
+\item \textbf{cerrar.php:} cierra todos los bloques de entrega de esa tabla,
+realizando una actualización de los campos \emph{lleno} y \emph{definitiva}
+de la tabla \emph{mdl\_bloques\_entrega} para ese curso.
+\item \textbf{registro\_alumno.php}: muestra un formulario con todos los
+turnos disponibles, es decir los que no estén llenos ni estén marcados
+como definitivos, de ese curso.\\
+Para cada uno de ellos genera un \emph{radio button} cuyo valor es
+el identificador de bloque. Además se muestra la opción de preferencia
+a través de una lista desplegable.
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/registro_alumno.png}
+
+
+\caption{Formulario de registro de alumnos}
+\end{figure}
+
+
+\begin{itemize}
+\item \textbf{confirmar\_guardar\_alumno.php}: muestra un \emph{notice\_yesno}
+solicitando al alumno que confirme que los datos que va a guardar
+en la base de datos son correctos.
+\item \textbf{guardar\_alumno.php}: recibe los datos del fichero anterior,
+e inserta una tupla con los datos en la tabla \emph{mdl\_user\_bloque.php}.\\
+Si todo sucedió correctamente, se aplica el algoritmo de reparto a
+ese bloque de entrega en concreto. De esta forma conseguimos que el
+proceso de reparto sea dinámico, y en cuanto el alumno vuelva al menú
+principal ya tendrá una fecha no definitiva.
+\item \textbf{user\_bloque.php}: clase con los atributos necesarios para
+realizar la inserción de una tupla en la tabla \emph{mdl\_user\_bloque}.
+\item \textbf{lib.php}: librería principal de la aplicación. Caben destacar
+las siguientes funciones:
+
+\begin{itemize}
+\item \emph{ordenar\_lista}: recibe un array de alumnos de un bloque y lo
+ordena en función de sus preferencias.\\
+El algoritmo se implementa tal y como se explica en la subsección
+anterior ''Algoritmo de reparto de turnos''.
+\item \emph{calcular\_plazas}: recibe la información completa de un bloque,
+y calcula el número de plazas aplicando la siguiente fórmula:
+\end{itemize}
+\[
+num_{plazas}=((hora_{fin}-hora_{inicio})/dur_{turno})*num_{correctores}\]
+
+
+\begin{itemize}
+\item \emph{asignar\_horas}: recibe un array de alumnos ordenado por preferencias
+de un bloque, y su bloque. Calcula las horas de entrega y las guarda
+en la tabla mdl\_user\_bloque en la base de datos aplicando el siguiente
+algoritmo:
+\end{itemize}
+\end{itemize}
+%
+\begin{algorithm}[H]
+
+\caption{Cálculo de horas}
+
+\begin{itemize}
+\item Calcular el número total de plazas.
+\item Inicialización de variables: $hora=hora_{base}$, $ncorrectores_{aux}=1$,
+etc.
+\item Para cada alumno
+
+\begin{itemize}
+\item Asignar día al alumno
+\item Asignar hora al alumno
+\item Si $ncorrectores_{aux}>=ncorrectores_{bloque}$
+
+\begin{itemize}
+\item Aumentar hora: $hora+=dur_{turno}$
+\end{itemize}
+\item Si no
+
+\begin{itemize}
+\item Aumentar n\_correctores\_aux: $ncorrectores_{aux}++$
+\end{itemize}
+\item Decrementar el número de plazas: $n_{plazas}--$
+\end{itemize}
+\item Si $n_{plazas}<=0$ 
+
+\begin{itemize}
+\item Marcamos dicho bloque como completo.
+\end{itemize}
+\end{itemize}
+
+\end{algorithm}
+
+
+\eject
+
+
+\subsection{Seguridad}
+
+En este apartado se detallan las medidas de seguridad que se han empleado
+en gTurnos. Los detalles sobre seguridad referentes a Moodle se comentan
+en la sección \vref{sub:Moodle-con-SSL}.
+
+En el siguiente algoritmo, se describe el proceso general de seguridad:
+
+%
+\begin{algorithm}[H]
+
+\caption{Pseudocódigo del sistema general de seguridad}
+
+\begin{itemize}
+\item Si la recogida y filtrado de parámetros es correcta.
+
+\begin{itemize}
+\item Si tiene los permisos necesarios en este curso.
+
+\begin{itemize}
+\item Si es correcto su rol y su identificador de sesión concuerda.
+
+\begin{itemize}
+\item Ejecutar acciones.
+\end{itemize}
+\item Si no, redirección (manual).
+\end{itemize}
+\item Si no, redirección (automática).
+\end{itemize}
+\item Si no, muestra error.
+\end{itemize}
+
+\end{algorithm}
+
+
+La implementación de dicho algoritmo en PHP se ha aplicado a lo largo
+de todos los ficheros de gTurnos en los que se requiere intervención
+del usuario: visualización, recogida, confirmación y grabado de datos.
+
+Todo el proceso se lleva a cabo gracias a funciones del API de Moodle,
+concretamente a la librería \emph{moodlelib.php.} Esto nos ofrece
+varias ventajas:
+
+\begin{itemize}
+\item Son funciones robustas, estables y completamente testeadas.
+\item Simplifica nuestra tarea.
+\item Cumplimos principios de modularidad.
+\end{itemize}
+Las funciones utilizadas son:
+
+\begin{itemize}
+\item \textbf{\emph{function required\_param(\$parname, \$type=PARAM\_CLEAN)
+return mixed:}} \\
+Recoge los valores pasados por GET y POST, haciendo que sean obligatorios.
+Además realiza una validación y filtrado de los valores en función
+del tipo indicado en \emph{\$type.}\\
+Por ejemplo si escogemos \emph{\$type=PARAM\_ALPHA}, eliminaría todos
+los caracteres que no estén en los grupos \emph{a-z},\emph{A-Z} del
+parámetro.
+\item \textbf{\emph{function require\_login(\$courseid=0, \$autologinguest=true,
+\$cm=null):}}\\
+Comprueba que el usuario este registrado y tenga permisos de acceso
+a ese curso. Si no es así, lo redirecciona a la página principal del
+curso como \emph{invitado} (si el curso lo permite) o a la pantalla
+de \emph{login}.
+\item \textbf{\emph{function isteacher(\$courseid=0, \$userid=0, \$includeadmin=true)
+return boolean}}: \\
+Comprueba que el usuario actual tiene el rol de profesor en el curso
+actual. Si no es así, procedemos a redireccionarlo manualmente a la
+página principal.
+\item \textbf{\emph{function isstudent(\$courseid, \$userid=0) return boolean:}}\\
+Ídem para estudiante.
+\item \textbf{\emph{function sesskey() return string:}} \\
+Otorga un identificador de sesión al usuario actual, si no lo posee.
+En caso de posesión, no lo sobreescribe. Utilizamos esta función sólo
+en la clase que genera la interfaz: \emph{block\_gturnos.php}.
+\item \textbf{\emph{function confirm\_sesskey(\$sesskey=NULL)}} \textbf{return
+bool}:\\
+Comprueba que el identificador de sesión que le pasamos concuerda
+con el registrado en la clase user.
+\end{itemize}
+Esta misma filosofía se ha aplicado respecto a la seguridad referente
+al acceso a base de datos, utilizando las funciones que nos proporciona
+Moodle, localizadas en este caso en el fichero \emph{weblib.php}.
+
+Las funciones utilizadas más frecuentemente son:
+
+\begin{itemize}
+\item \textbf{\emph{function get\_records\_select(\$table, \$select='',
+\$sort='', \$fields='{*}', \$limitfrom='', \$limitnum='') return mixed
+(array de objetos):}}\\
+Con esta función realizamos las consultas SELECT necesarias, recogiendo
+los valores en un array de objetos.
+\item \textbf{\emph{function count\_records\_select(\$table, \$select='',
+\$countitem='COUNT({*})') return int:}}\\
+Nos devuelve el número de registros afectados con dicha condición
+SELECT. Muy útil, para por ejemplo evitar acciones con una consulta
+que no va a devolver ningún registro.
+\item \textbf{\emph{function set\_field(\$table, \$newfield, \$newvalue,
+\$field1, \$value1, \$field2='', \$value2='', \$field3='', \$value3='')
+return boolean:}}\\
+Fija un nuevo valor en uno de los campos, que cumpla las condiciones
+que se marcan en \emph{\$field1}, \emph{\$value1}, \emph{\$field2},...\\
+Es decir, es la forma de hacer los UPDATE a través del API de Moodle.
+\end{itemize}
+Se han utilizado funciones similares para realizar los INSERT y los
+DELETE; así como diversas variantes en las que no hay que preparar
+el valor de \emph{\$select}, sino que se realiza automáticamente a
+partir de los parámetros (aunque con la limitación de un sólo campo)
+%
+\footnote{Para más información, consultar el Core API de Moodle: \emph{http://moodle.org/mod/resource/view.php?id=1267}%
+}.\\
+ \\
+Gracias a la aplicación de estas medidas, se evitan problemas como:
+
+\begin{itemize}
+\item Acceso de invitados a la aplicación.
+\item Usuarios que acceden a funciones que no corresponden a su rol.
+\item Ataques XSS.
+\item Ataques de inyección SQL.
+\end{itemize}
+\eject
+
+
+\subsection{Instalación y desinstalación}
+
+
+\subsubsection{Proceso de instalación}
+
+El proceso de instalación de gTurnos sigue las pautas de cualquier
+bloque de Moodle:
+
+\begin{itemize}
+\item Descomprimir el paquete, y copiar el directorio \emph{gturnos} dentro
+del directorio \emph{blocks} de la instalación de Moodle.
+\item Acceder a Moodle como \emph{admin}, e instalar el bloque:
+
+\begin{itemize}
+\item Pinchando en ''\emph{Admin}'', en versiones inferiores a la 1.7.
+\item Pinchando en ''\emph{Notifications}'', a partir de la versión 1.7.
+\end{itemize}
+\item El bloque se instala automáticamente: se registra en administración,
+se crean las tablas necesarias en la base de datos, etc.\\
+Una vez completado, se muestra información sobre el proceso:\\
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.4]{screenshots/instalacion_p2.png}
+
+
+\caption{Información acerca del proceso de instalación}
+\end{figure}
+
+\item Completada la instalación, los profesores pueden crear la instancia
+para el curso y configurarla.
+\end{itemize}
+Para conseguirlo, hemos seguido el manual de estilo de Moodle, en
+la que se especifica que se ha de crear un directorio \emph{db} dentro
+de la estructura de la aplicación, e insertar los ficheros necesarios
+para la creación de las tablas en el mismo. 
+
+En nuestro caso, hemos añadido los ficheros:
+
+\begin{itemize}
+\item \emph{mysql.php:} fichero que contiene la función \emph{gturnos\_upgrade()},
+en la que se checkea si la versión que vamos a instalar es superior,
+en cuyo caso se programan las actualizaciones necesarias.
+\item \emph{mysql.sql:} contiene el script SQL que se ejecuta automáticamente
+al realizar la instalación, creando las tablas necesarias para nuestra
+aplicación.
+\end{itemize}
+
+\subsubsection{Proceso de desinstalación}
+
+El proceso de desinstalación sigue igualmente las pautas de cualquier
+bloque Moodle:
+
+\begin{itemize}
+\item Entramos a Moodle como \emph{admin}.
+\item Accedemos a la gestión de bloques, entre los que aparecerá nuestro
+\emph{Gestor de turnos}. Pinchamos en Borrar.
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~\includegraphics[%
+  scale=0.35]{screenshots/desinstalacion_p1.png}
+
+
+\caption{Desinstalando gTurnos desde el menú de gestión de bloques}
+\end{figure}
+
+
+\begin{itemize}
+\item Se solicita confirmación y se informa de las consecuencias. Una vez
+aceptado, se procede a la desinstalación y se informa del estado de
+finalización del proceso.
+\end{itemize}
+Para destruir los datos de una instancia en particular, se ha sobreescrito
+el método \emph{instance\_delete()} de \emph{block\_gturnos.php},
+agregando la ejecución de sentencias SQL que eliminan el contenido
+de esa instancia en particular en la base de datos.
+
+Asímismo, para el caso de una desinstalación completa, se han añadido
+las sentencias SQL necesarias para destruir todas las tablas en el
+script \emph{mysql.sql}.
+
+\eject
+
+
+\subsection{Internacionalización}
+
+Para intentar conseguir una mayor difusión de gTurnos, se encuentra
+disponible en castellano y en inglés. Asímismo se ha dado soporte
+tanto a la codificación de caracteres \emph{UTF-8}%
+\footnote{UTF-8 (8-bit Unicode Transformation Format), es una codificación de
+caracteres de longitud variable para Unicode creado por Rob Pike y
+Ken Thompson. UTF-8 usa grupos de bytes para representar el estándar
+de Unicode para los alfabetos de muchos de los lenguajes del mundo.\\
+\emph{Fuente: Wikipedia (adaptación)}%
+} como a \emph{ISO-8859-1}%
+\footnote{ISO 8859-1, es una norma de la ISO que define la codificación del
+alfabeto latino. Esta norma pertenece al grupo de juegos de caracteres
+de la ISO conocidos como ISO-8859 que se caracterizan por poseer la
+codificación ASCII en su rango inicial (128 caracteres) y otros 128
+caracteres para cada codificación, con lo que en total utilizan 8
+bits.\\
+\emph{Fuente: Wikipedia (adaptación)}%
+}.
+
+Moodle nos facilita la internacionalización, a través del siguiente
+proceso:
+
+\begin{itemize}
+\item Creación de un directorio \emph{lang}, dentro del paquete de la aplicación.
+\item Creación de subdirectorios para cada idioma. El nombre del subdirectorio
+sigue las siguientes pautas:
+
+\begin{description}
+\item [ClaveIdioma{[}\_ClaveRegional{]}{[}\_utf8{]}]~
+\end{description}
+Por ejemplo, para castellano de España con codificación \emph{UTF-8}
+el subdirectorio sería: \emph{es\_es\_utf8}.
+
+\item En cada uno de estos directorios creamos un fichero \emph{block\_gturnos.php}
+con las cadenas en el idioma y la codificación correspondiente.
+\item A lo largo del programa, obtenemos las cadenas a con la función \emph{get\_string()}
+a partir del identificador de la cadena.
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~\includegraphics[%
+  scale=0.4]{screenshots/internacionalizacion_en.png}~~~~\includegraphics[%
+  scale=0.4]{screenshots/internacionalizacion_es.png}
+
+
+\caption{Menú de configuración de bloques, en castellano y en inglés}
+\end{figure}
+
+
+\eject
+
+
+\section{Pruebas y estudio del uso de la aplicación en la universidad}
+
+
+\subsection{gTurnos sobre distintas versiones de Moodle}
+
+Cuando comenzó el desarrollo del proyecto, la versión más reciente
+de Moodle era la 1.6.2, y ha sido esta la versión para la que se ha
+desarrollado.
+
+El 13 de octubre de 2006 se lanza la versión 1.6.3%
+\footnote{Se puede consultar \emph{http://docs.moodle.org/en/Release\_Notes\#Moodle\_1.6.3}
+para ver la lista de cambios.%
+}, por lo que tuvo que probarse de nuevo la aplicación bajo esta nueva
+versión. La versión 1.6.3 soluciona errores respecto a la versión
+anterior, pero no supone grandes cambios a nivel estructural, por
+lo que la aplicación se adapta sin problemas a la nueva versión. 
+
+El 7 de noviembre de 2006 se lanza la versión 1.7%
+\footnote{Se puede consultar \emph{http://docs.moodle.org/en/Release\_Notes\#Moodle\_1.7}
+para ver la lista de cambios.%
+}, que incluye un nuevo sistema de roles que sí que podría afectar
+a gTurnos. Por tanto, se procedió a realizar un estudio de como afectaban
+las nuevas características a nuestra aplicación, y si requería cambios
+o incluso una nueva versión.
+
+
+\subsubsection{Análisis del nuevo sistema de roles de Moodle 1.7}
+
+A continuación, se describen los permisos de los roles de Moodle 1.7
+sobre el bloque gTurnos:
+
+\begin{itemize}
+\item \emph{admin}: el usuario \emph{admin} posee acceso total, como en
+versiones anteriores.
+\item \emph{guest}: el perfil de invitado mantiene las mismas características
+que en versiones anteriores. Por tanto el impacto sobre nuestra aplicación
+es el mismo: no tiene acceso a él, ni siquiera ve la interfaz.
+\item \emph{teacher}: el perfil de profesor también se mantiene. Por tanto,
+al igual que en las versiones anteriores, puede instanciar el bloque,
+configurar los plazos de entrega, destruir la instancia, etc.
+\item \emph{student}: el perfil de estudiante tampoco cambia sus privilegios.
+Así que el alumno accede correctamente a la interfaz del bloque, puede
+registrarse, visualizar su fecha, etc.
+\item \emph{non-editing-teacher}: se trata de un nuevo rol de esta versión.
+El perfil es similar al de un profesor, pero no tiene acceso al modo
+edición.\\
+Por tanto, en nuestro bloque Moodle, un usuario con este perfil podrá
+configurar el bloque de entrega, visualizar el listado de alumnos,
+cerrar la lista, etc. como cualquier otro profesor. Pero al tener
+limitado el acceso al modo edición, no puede instanciar el bloque. 
+\item \emph{course-creator}: se trata de otro nuevo rol creado en la versión
+1.7, que funciona de forma complementaria al anterior. Un usuario
+con este perfil tiene acceso al modo edición en el curso, pero no
+a las opciones del profesor.\\
+Por tanto, un c\emph{ourse-creator} podrá instanciar gTurnos, pero
+no podrá ver el listado de alumnos, configurar los plazos de entrega,
+cerrar las listas, etc.
+\end{itemize}
+
+\subsubsection{Conclusiones del análisis del nuevo sistema de roles sobre gTurnos}
+
+La generación de la interfaz, el acceso a la aplicación y el sistema
+de seguridad se adaptan sin ningún problema a la nueva versión de
+Moodle.
+
+Por tanto, no es necesario crear una nueva versión de gTurnos para
+adaptarse al nuevo sistema de roles; pero habrá que realizar un análisis
+como el anterior para versiones futuras.\\
+Aunque parece que, tal y como informa la comunidad de Moodle%
+\footnote{Conclusiones obtenidas a partir de los informes y mensajes expuestos
+en la comunidad Moodle.
+
+Para más información:
+
+\begin{itemize}
+\item \emph{http://docs.moodle.org/en/Release\_Notes} (lista de cambios
+por lanzamientos)
+\item http://moodle.org/course/view.php?id=5 (Using Moodle: comunidad de
+usuarios de Moodle en inglés)
+\item \emph{http://moodle.org/course/view.php?id=11} (Moodle en Español:
+comunidad de usuarios de Moodle en castellano)
+\end{itemize}
+%
+}, el nuevo sistema de roles va a permanecer estable durante las próximas
+versiones; que se van a centralizar especialmente en hacer Moodle
+compatible con los sistemas estándares de accesibilidad.
+
+\eject
+
+
+\subsection{gTurnos sobre distintas versiones de PHP y MySQL}
+
+El proyecto fue desarrollado bajo MySQL 5.0 y PHP 5.1.2.\\
+Posteriormente, se probó bajo versiones anteriores de MySQL y PHP.
+Mientras que con el SGBD no hubo ningún problema, sí que se encontraron
+ante versiones previas de PHP, como por ejemplo la 4.4.2.
+
+
+\subsubsection{Análisis de gTurnos sobre distintas versiones de PHP}
+
+El problema se hallaba en la principal novedad de las clases en PHP
+5%
+\footnote{Para más información, consultar el artículo ''Un vistazo a PHP 5'',
+en \emph{http://libertonia.escompolinux.org/story/2004/7/15/115328/134}%
+}: la inclusión de modificadores de control de acceso para implementar
+la encapsulación, la piedra angular del paradigma de la programación
+orientada a objetos.
+
+Las versiones anteriores no contemplaban dichos modificadores, y aunque
+permiten declarar clases, los atributos son siempre públicos.
+
+
+\subsubsection{Conclusiones y soluciones para versiones anteriores a PHP 5}
+
+La solución consistió en realizar un nuevo lanzamiento de gTurnos
+adaptando el código a versiones anteriores, y haciendo que los atributos
+de todas las clases en esta versión de la aplicación sean públicos.\\
+
+
+%
+\begin{figure}[H]
+\includegraphics[%
+  scale=0.45]{screenshots/diferentes_vers_php.png}
+
+
+\caption{Lanzamientos para ambas versiones de PHP, en sourceforge.net}
+\end{figure}
+
+
+\eject
+
+
+\subsection{gTurnos sobre distintas plataformas}
+
+La elección de PHP como lenguaje de programación permite que las aplicación
+sea multiplataforma. 
+
+gTurnos fue desarrollado bajo Ubuntu 6.06, que fue el sistema en el
+que se realizaron las pruebas inicialmente. 
+
+Al ser PHP un lenguaje interpretado en el que se ejecutan las acciones
+en el lado del servidor, no debería haber problemas para usarlo en
+máquinas con otros sistemas operativos que cuenten con un intérprete
+PHP adecuado.
+
+Pero es necesario comprobar el correcto funcionamiento de la aplicación,
+ya que ciertas funciones pueden existir para un sistema pero no para
+otro.
+
+Por ello, se realizó la misma batería de pruebas%
+\footnote{Pruebas respecto a:
+
+\begin{itemize}
+\item Moodle: 1.6.2, 1.6.3 y 1.7(beta2)
+\item PHP: 4.4.2 y 5.1.2
+\end{itemize}
+%
+} que habíamos realizado bajo Ubuntu en un entorno Windows, y los resultados
+fueron satisfactorios.
+
+%
+\begin{figure}[H]
+\includegraphics[%
+  scale=0.35]{screenshots/ver_alumnos_w32.jpg}
+
+
+\caption{Ejecución de gTurnos bajo Windows XP}
+\end{figure}
+
+
+\eject
+
+
+\subsection{\label{sub:Autenticaci=F3n-con-m=F3dulo}Autenticación con módulo
+PAM}
+
+La utilización de un bloque que gestione el reparto de turnos para
+las entregas de las prácticas, requiere la utilización de sistemas
+de autenticación de usuarios bajo Moodle; ya que, si se procesara
+información falsa, las listas generadas se adulterarían.
+
+El objetivo de este apartado es buscar un método para conseguir que
+la autenticación de los usuarios del sistema Moodle utilice los datos
+de las cuentas de las máquinas de los laboratorios.
+
+Moodle dispone de diversos métodos de autenticación:
+
+\begin{itemize}
+\item Autenticación basada en Email.
+\item Permitir sólo cuentas manuales.
+\item Uso de PAM.
+\item Uso de servidores LDAP.
+\item Uso de servidores POP3.
+\item (...)
+\end{itemize}
+Los laboratorios utilizan LDAP como sistema de autenticación, y el
+estudio nos ofrecía varias alternativas:
+
+\begin{enumerate}
+\item Permitir sólo cuentas manuales. Esta solución es tediosa, poco práctica
+y completamente descartable.
+\item Creación de un script que recogiera los datos de las cuentas de las
+máquinas, y generara cuentas de Moodle interactuando con la base de
+datos. \\
+El problema de esta solución es que es demasiado rudimentaria, y desaprovecha
+las capacidades de autenticación proporcionadas por Moodle.
+\item Utilizar el módulo de autentificación LDAP que proporciona Moodle,
+y conectarlo con el servidor LDAP de los laboratorios.\\
+El problema de esta solución es que el montaje de un servidor LDAP
+para realizar las pruebas es complejo, y se escapaba de los propósitos
+del proyecto.
+\item La última alternativa estudiada consistía en la utilización del módulo
+PAM. \\
+PAM está presente en cualquier máquina UNIX, por lo que la realización
+de las pruebas no supondría problemas. \\
+Es ideal, ya que aprovechamos la configuración de los laboratorios,
+en la que el servidor que tiene instalado Moodle permite el acceso
+PAM a través de la comunicación con el servidor LDAP.\\
+Por tanto, configurando dicho módulo en el servidor con Moodle, los
+usuarios de LDAP son accesibles por Moodle a través de PAM.\\
+A continuación se muestra un esquema de este método, que es el que
+se recomienda para su implantación en los laboratorios:%
+\begin{figure}[H]
+\includegraphics[%
+  scale=0.5]{autenticacion.png}
+
+
+\caption{Esquema con el sistema de autenticación recomendado}
+\end{figure}
+
+\end{enumerate}
+El módulo PAM que utiliza Moodle es \emph{pam\_auth 0.4}%
+\footnote{Para más información y descarga: \emph{http://www.math.ohio-state.edu/\textasciitilde{}ccunning/pam\_auth/}%
+} (GPL) que permite la autentificación PAM a través del lenguaje PHP.
+
+Su utilización es sencilla, ya que ofrece una única función \emph{pam\_auth(\$password,
+\$username, \&\$error)} que nos devuelve un booleano indicando si
+la autentificación del usuario es correcta.
+
+La instalación para PHP 4 se puede hacer desde los repositorios Debian.
+Sin embargo, su utilización en PHP 5 requiere otras librerías para
+compilarla%
+\footnote{En el apéndice \vref{Ap-PAM-AUTH} se detalla el proceso de instalación
+y configuración para ambas versiones.%
+}. 
+
+\eject
+
+
+\subsection{\label{sub:Moodle-con-SSL}Moodle con HTTPS en el login}
+
+En este apartado se analiza la seguridad en el acceso a Moodle, y
+se dan recomendaciones de seguridad para su implantación. Este aspecto
+es más crítico aun si utilizamos métodos de autenticación como los
+explicados en la subsección anterior; ya que no sólo se podrían robar
+las cuentas de Moodle, sino las propias cuentas de los usuarios en
+las máquinas de los laboratorios.
+
+
+\subsubsection{Capturando paquetes en Moodle 1.6.2 y 1.6.3}
+
+Al capturar paquetes con Ethereal observamos que la información viaja
+en claro. Esto incluye el nombre de usuario y contraseña, por lo que
+si no aplicamos ninguna medida de seguridad, bastaría con capturar
+paquetes para robar las cuentas de los usuarios en los laboratorios.
+
+%
+\begin{figure}[H]
+\includegraphics[%
+  scale=0.4]{screenshots/acceso_http_moodle_162_rec.png}
+
+
+\caption{Nombre de usuario y contraseña en claro capturadas con Ethereal}
+\end{figure}
+
+
+La solución pasa por utilizar el protocolo HTTPS en el servidor en
+el que tenemos instalado Moodle para que, utilizando cifrado SSL,
+encripte el contenido de todas las peticiones y respuestas HTTP.\\
+El problema de esta solución es que ralentiza el proceso, por lo que
+nos gustaría aplicar el cifrado al momento de la autenticación del
+usuario, que es en el que trabajamos con la información sensible.
+
+
+\subsubsection{Moodle 1.7: uso de HTTPS en el login}
+
+La nueva versión de Moodle incorpora esta opción, que es activable
+a partir del menú de configuración del administrador: \emph{Site Administration->
+Security-> HTTP Security}%
+\footnote{En el Apéndice \vref{Ap-SSL} se muestra un ejemplo de instalación
+y configuración de HTTPS para un servidor Apache 2.%
+}.
+
+%
+\begin{figure}[H]
+\includegraphics[%
+  scale=0.4]{screenshots/acceso_https_opcion.png}
+
+
+\caption{Opción de uso de HTTPS en el login, de la versión 1.7 de Moodle}
+\end{figure}
+
+
+Se realizaron de nuevo las capturas con Ethereal, comprobando que
+efectivamente se cifra el proceso de logueo, mientras que el resto
+de interacciones con Moodle no se cifran.
+
+%
+\begin{figure}[H]
+\includegraphics[%
+  scale=0.4]{screenshots/acceso_https_moodle17_rec.png}
+
+
+\caption{Paquete cifrado, con nombre de usuario y contraseña, capturado con
+Ethereal}
+\end{figure}
+
+
+Por tanto, este es el método que recomendamos, ya que es seguro y
+mucho más ligero que cifrar todas las conexiones con Moodle.
+
+\eject
+
+
+\section{Herramientas utilizadas}
+
+Para el desarrollo de gTurnos y de la documentación se han utilizado
+una serie de herramientas que se describen brevemente a continuación.
+Todas ellas son software libre.
+
+\begin{itemize}
+\item Moodle 1.6.2, 1.6.3 y 1.7(beta2): plataforma de aprendizaje a distancia
+basada en software libre.
+\item Apache 2.2: potente servidor HTTP multiplataforma de código abierto.
+Desarrollado por Apache Software Foundation.
+\item PHP 4.4.2 y 5.1.2: intérprete del lenguaje PHP, utilizado para la
+generación de páginas web dinámicas o para programación en consola.
+\item MySQL 5.0.2: sistema gestor de bases de datos multiusuario y multihilo
+ampliamente extendido.
+\item Eclipse SDK 3.1.2: IDE%
+\footnote{IDE (Integrated Development System), programa compuesto por un conjunto
+de herramientas integradas de programación.%
+} multiplataforma libre y modular, para crear aplicaciones de cualquier
+tipo. Creado inicialmente por IBM, en la actualidad lo desarrolla
+la Fundación Eclipse.
+\item PHPeclipse 1.1.8: proporciona soporte PHP para Eclipse, incluyendo
+analizador sintáctico, depurador, resaltado de código, etc. 
+\item PHPMyAdmin 2.9.1: herramienta escrita en PHP para manejar la administración
+de MySQL a través de páginas web.
+\item DBDesigner 4.0.54: sistema libre de diseño visual de bases de datos,
+optimizado para MySQL.
+\item DIA 0.95: aplicación gráfica de propósito general para la creación
+de diagramas. Es parte del proyecto GNOME%
+\footnote{Proyecto GNOME, es un entorno de escritorio para sistemas UNIX bajo
+tecnología X Window. Forma parte oficial del proyecto GNU.%
+}.
+\item Ethereal 0.99 (actualmente Wireshark): analizador de protocolos que
+permite examinar el tráfico de una red.
+\item GIMP 2.2.8: herramienta de diseño gráfico del proyecto GNU%
+\footnote{Proyecto GNU, proyecto iniciado por Richard Stallman con el objetivo
+de crear un sistema operativo libre completo.%
+}.
+\item OpenOffice Impress 2.0.2: programa para generación de presentaciones.
+Es parte de la suite ofimática OpenOffice.org, desarrollada por Sun
+Microystems.
+\item Lyx 1.3.7: programa gráfico multiplataforma que permite la edición
+de textos utilizando \LaTeX{}%
+\footnote{\LaTeX{}, es un procesador de textos formado por un conjunto de macros
+con la intención de facilitar el uso del lenguaje de composición tipográfica
+\TeX{}.%
+}.
+\end{itemize}
+
+\chapter{Conclusiones}
+
+
+\section{Principales logros alcanzados}
+
+gTurnos proporciona una solución a la informatización del problema
+del reparto de turnos, implementando un algoritmo que cubre las necesidades
+del profesor y del alumno, a través de una sencilla interfaz web fácil
+de utilizar.
+
+Su diseño modular y en forma de bloque Moodle, lo hace portable y
+útil más allá de su uso en los laboratorios de la universidad. Para
+ello se ha hecho además un esfuerzo en la internacionalización, y
+se han preparado manuales de uso.
+
+El sistema de seguridad de la aplicación utiliza todas las herramientas
+que nos proporciona Moodle, y ha demostrado ser eficaz. 
+
+En cuanto al análisis para su uso en los laboratorios, se han analizado
+los métodos y se han dado recomendaciones argumentadas.
+
+Por tanto, se puede concluir que el proyecto gTurnos cubre todos los
+objetivos planteados inicialmente.
+
+
+\section{Posibles trabajos futuros}
+
+Con la llegada de las nuevas versiones de Moodle se están realizando
+esfuerzos en hacer que el sistema pueda utilizar otros sistemas gestores
+de bases de datos, como Oracle o Microsoft SQL Server. Un posible
+trabajo futuro sobre gTurnos sería ampliar los sistemas gestores de
+bases de datos sobre los que puede trabajar.
+
+Otra posible ampliación es implementarlo como un bloque multi-instancia,
+que permita trabajar con varios gestores de turnos a la vez en un
+mismo curso.
+
+
+\section{Valoración personal}
+
+Personalmente estoy muy satisfecho de haber podido trabajar en este
+proyecto. El hecho de crear una solución y englobarla en un sistema
+tan grande como Moodle, ha sido realmente divertido y didáctico.
+
+Asímismo, he disfrutado de la posibilidad de trabajar por primera
+vez junto a una comunidad de software libre, la de los desarrolladores
+de Moodle, a los que agradezco su ayuda y prometo seguir dejándome
+''caer por los foros'' y echar una mano en todo lo posible.
+
+\eject
+
+\begin{thebibliography}{10}
+\bibitem{key-27}Curso de PHP 5 para ACM, por Iván Sánchez Ortega, bajo licencia Creative
+Commons: \emph{http://acm.asoc.fi.upm.es/documentacion/php2005/manual}
+\bibitem{key-35}Documentación oficial de PHP en castellano: \emph{http://www.php.net/manual/es}
+\bibitem{key-28}Página principal de Moodle: \emph{http://moodle.org}
+\bibitem{key-30}Foro de usuarios de Moodle en castellano: \emph{http://moodle.org/course/view.php?id=11}
+\bibitem{key-31}Foro de usuarios de Moodle en inglés: \emph{http://moodle.org/course/view.php?id=5}
+\bibitem{key-32}Core API de Moodle: \emph{http://moodle.org/mod/resource/view.php?id=1267}
+\bibitem{key-44}Manual de estilo de código de Moodle: \emph{http://docs.moodle.org/es/Manual\_de\_Estilo\_de\_Código}
+\bibitem{key-33}Página web del proyecto pam\_auth: \emph{http://www.math.ohio-state.edu/\textasciitilde{}ccunning/pam\_auth/}
+\bibitem{key-36}Documentación oficial de MySQL: \emph{http://dev.mysql.com/doc}
+\bibitem{key-37}Artículo ''Configurar Apache 2 con SSL en Ubuntu'', del grupo GPL
+Tarragona: \emph{http://gpltarragona.org/archives/318}
+\bibitem{key-39}William H. Rice IV, ''Moodle: E-Learning Course Deveploment'', ed.
+Packt Publishing, 2006, ISBN-1904811-29-9
+\bibitem{key-41}Wilfred Ashish, ''Programación con PHP'', ed. Anaya, 2002, ISBN-8441514-18-6
+\bibitem{key-43}Francisco Charte, ''SQL'', ed. Anaya, 2005, ISBN-8441519-15-3
+\end{thebibliography}
+\appendix
+
+\part*{Apéndices}
+
+
+\chapter{\label{Ap-PAM-AUTH}Instalación y configuración de pam\_auth en Debian}
+
+En este apartado se describen los pasos necesarios para utilizar \emph{pam\_auth},
+un módulo que nos permite usar el servicio PAM para autentificar usuarios
+a través de PHP.
+
+Se trata de una adaptación del manual de instalación que podemos encontrar
+en: \emph{http://www.math.ohio-state.edu/\textasciitilde{}ccunning/pam\_auth/INSTALL}
+
+
+\section{Instalación para PHP 4}
+
+La forma más fácil de instalar \emph{pam\_auth} en PHP 4 es a partir
+de los repositorios:
+
+\begin{quotation}
+\emph{apt-get install php4-pam-auth}
+\end{quotation}
+
+\section{Instalación para PHP 5}
+
+A fecha de hoy no existe paquete Debian para PHP 5, por lo que debemos
+instalarlo manualmente:
+
+\begin{itemize}
+\item Necesitamos las librerías: \emph{php5-dev} y \emph{libpam0g-dev}\\
+\emph{apt-get install php5-dev libpam0g-dev}
+\item Descargamos y descomprimimos el código fuente de \emph{pam-auth}:\\
+\emph{wget http://www.math.ohio-state.edu/\textasciitilde{}ccunning/pam\_auth/pam\_auth-0.4-4.3.tar.gz}\\
+\emph{tar -xzvf pam\_auth-0.4-4.3.tar.gz}
+\item Nos metemos en el directorio en el que está descomprimido, y preparamos
+la extensión PHP para compilar:\\
+\emph{cd pam\_auth}\\
+\emph{phpize}
+\item Por último, compilamos:\\
+\emph{./configure}\\
+\emph{make}\\
+\emph{make install}
+\end{itemize}
+
+\section{Ejemplo de configuración de pam\_auth}
+
+Una vez instalado, tenemos que activar el servicio. A continuación,
+se muestra un posible proceso de configuración:
+
+\begin{itemize}
+\item Lo primero, es agregar la extensión y el servicio en PHP, a través
+del fichero \emph{php.ini}. Por ejemplo para un servidor Apache 2
+con PHP 5, este fichero se encuentra en en \emph{/etc/php5/apache2/php.ini.}\\
+Una vez localizado, indicamos a PHP que hay un nuevo servicio agregándolo
+en el fichero de configuración:\\
+\emph{extension=pam\_auth.so}\\
+\emph{;Añado el servicio PAM}\\
+\emph{pam\_auth.servicename = ''whatever''}
+\item Posteriormente, agregamos las directrices que tiene que seguir PAM
+para trabajar con PHP. \\
+Para ello, hay que crear un fichero con nombre \emph{php} en el directorio
+\emph{/etc/pam.d}. Una posible configuración es:\\
+\emph{\# /etc/pam.d/php}\\
+\emph{auth sufficient /lib/security/pam\_pwdb.so shadow nodelay}\\
+\emph{account sufficient /lib/security/pam\_pwdb.so }
+\item Para autentificar al usuario, PHP necesita acceder al fichero \emph{shadow}%
+\footnote{shadow es el fichero en el que se guardan encriptados los datos de
+las cuentas de los usuarios.
+
+Para más información: \emph{man 5 shadow}%
+}. Podemos darle permisos de lectura a todos los usuarios al fichero
+\emph{shadow}, pero esto es peligroso.\\
+Una alternativa algo más segura es cambiar el grupo de \emph{shadow}
+al que pertenece el servidor web. \\
+Si se decide habilitarlo, se recomienda el uso del módulo \emph{pam\_tally},
+que limita el número de logins fallidos para evitar ataques de fuerza
+bruta%
+\footnote{Se denominan ataque de fuerza bruta a la forma de recuperar la clave
+probando todas las combinaciones posibles hasta encontrar la que nos
+permite el acceso.
+
+\emph{Fuente: Wikipedia}%
+}.
+\end{itemize}
+
+\chapter{\label{Ap-SSL}Habilitación de SSL para un servidor Apache2 en Debian}
+
+A continuación, se comentan los pasos necesarios para activar el encriptado
+SSL en un servidor Apache 2 en Debian.
+
+\begin{itemize}
+\item Habilitamos el módulo SSL:\\
+\emph{a2enmod ssl}
+\item Generamos nuestro certificado de seguridad%
+\footnote{Un certificado de seguridad es un documento digital mediante el cual
+un tercero confiable garantiza la vinculación entre la identidad de
+un sujeto o entidad y su clave pública.
+
+Ese tercero suele ser una autoridad de certificación, pero en nuestro
+caso de ejemplo lo certificamos nosotros mismos.
+
+\emph{Fuente: Wikipedia (adaptación)}%
+} autofirmado. Para ello ejecutamos el script \emph{apache2-ssl-certificate},
+y se nos preguntará el nombre del servidor, nuestra dirección de correo,
+el país donde se encuentra ubicado, etc.
+\item Creamos la configuración del sitio basándonos en el fichero \emph{/etc/apache2/sites-available/default}
+y hacemos un enlace blando a dicho fichero en el directorio que nos
+informa de los sitios activos:\\
+\emph{cp /etc/apache2/sites-available/default /etc/apache2/sites-available/ssl}\\
+\emph{ln -s /etc/apache2/sites-available/ssl /etc/apache2/sites-enabled/ssl}
+\item Configuramos el fichero. La configuración de Apache 2 es muy abierta
+y existe mucha documentación al respecto%
+\footnote{Para más información consultar: \emph{http://httpd.apache.org/docs/2.2/ssl}%
+}. Como ejemplo, el fichero podría comenzar así:\\
+\emph{NameVirtualHost {*}:443}\\
+\emph{<VirtualHost {*}:443>}\\
+\emph{ServerAdmin webmaster@localhost}\\
+\emph{DocumentRoot /home/drozas/mi\_web}\\
+\emph{<Directory />}\\
+\emph{Options FollowSymLinks}\\
+\emph{AllowOverride None}\\
+\emph{</Directory>}
+\item Por último, añadimos una directiva al fichero de configuración \emph{/etc/apache2/sites-enabled/ssl},
+indicando donde está ubicado el certificado y activando el servicio:\\
+\emph{SSLEngine On}\\
+\emph{SSLCertificateFile /etc/apache2/ssl/apache.pem}
+\item No olvidarse de abrir el puerto 443, y de reiniciar el servidor:\\
+\emph{/etc/init.d/apache2 force-reload}
+\end{itemize}
+
+\chapter{Manual de uso en castellano}
+
+
+\section{¿Qué es gTurnos?}
+
+gTurnos es un bloque para Moodle, que gestiona el reparto de turnos
+teniendo en cuenta tanto las necesidades del profesor como las del
+alumno.\\
+La idea surge para informatizar la forma en que nos apuntábamos a
+las entregas de las prácticas en los laboratorios de mi universidad:
+a través de una hoja de papel pegada en la puerta.\\
+El problema por parte del profesor es que la lista no era compacta
+y podía resultar sobrecargada o infracargada.\\
+En cuanto al alumno, no siempre se adaptaba a sus necesidades, por
+ejemplo al necesitar un turno por la mañana porque se trabaja por
+las tardes.
+
+Con gTurnos las listas generadas son siempre compactas y, al igual
+que en una cola, se da prioridad a las preferencias de aquellos que
+se desean inscribir primero.
+
+
+\section{Versiones soportadas}
+
+gTurnos se desarrolló para la versión 1.6.2 de Moodle, y se ha probado
+con éxito en las versiones superiores lanzadas hasta el día de hoy:
+1.6.3 y 1.7.
+
+Requiere MySQL y PHP. En cuanto a las versiones de PHP, existe una
+versión de gTurnos para PHP 5 y otra para PHP 4.
+
+
+\section{Instalación de gTurnos}
+
+El proceso de instalación de gTurnos sigue las pautas de cualquier
+bloque de Moodle:
+
+\begin{itemize}
+\item Descomprimir el paquete, y copiar el directorio \emph{gturnos} dentro
+del directorio \emph{blocks} de la instalación de Moodle.
+\item Acceder a Moodle como \emph{admin}, e instalar el bloque:
+
+\begin{itemize}
+\item Pinchando en ''\emph{Admin}'', en versiones inferiores a la 1.7.
+\item Pinchando en ''\emph{Notifications}'', a partir de la versión 1.7.
+\end{itemize}
+\item El bloque se instala automáticamente. Una vez completado, se muestra
+información sobre el proceso:\\
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.4]{screenshots/instalacion_p2.png}
+
+
+\caption{Información mostrada tras una instalación correcta}
+\end{figure}
+
+\end{itemize}
+
+\section{Usando gTurnos}
+
+Una vez instalado, un profesor con capacidad de edición en un curso
+puede realizar una instancia:\\
+\emph{Activar edición->Bloques (Agregar...)->Gestor de turnos}
+
+
+\subsection{Menú del profesor}
+
+El menú del profesor, consta de las siguientes opciones:
+
+\begin{itemize}
+\item Configurar bloques de entrega.
+\item Ver alumnos por orden de registro.
+\item Vista previa de la lista de entrega.
+\item Cerrar lista de entrega.
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.4]{screenshots/instalacion_p5.png}
+
+
+\caption{Menú del profesor}
+\end{figure}
+
+
+
+\subsubsection{Configurar bloques de entrega}
+
+El primer paso que tiene que dar el profesor es determinar los rangos
+de entrega. Se presenta un formulario con las opciones disponibles,
+y se muestra información de los bloques de entrega configurados actualmente:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.4]{screenshots/configurar_bloques.png}
+
+
+\caption{Configuración de los bloques de entrega}
+\end{figure}
+
+
+El profesor puede configurar tantos bloques de entrega como desee.
+Cuantos más bloques de entrega configure, más flexibilidad tendrán
+los alumnos. La aplicación garantiza, en cualquier caso, que para
+cada bloque la lista generada será compacta.
+
+
+\subsubsection{Visualización de alumnos registrados}
+
+Pinchando en ''Ver alumnos por orden de registro'', el profesor
+puede consultar la información del proceso de registro de los alumnos:\\
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/ver_alumnos.png}
+
+
+\caption{Información acerca del registro de los alumnos}
+\end{figure}
+
+
+
+\subsubsection{Vista previa de la lista}
+
+Accediendo a la vista previa, el profesor puede consultar la asignación
+de turnos para todos los alumnos:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/vista_previa.png}
+
+
+\caption{Lista de turnos}
+\end{figure}
+
+
+
+\subsubsection{Cerrar la lista de entrega}
+
+Cuando el profesor decide que el plazo de inscripción ha finalizado,
+hace las listas definitivas pinchando en este link.\\
+Una vez se ha confirmado el proceso, los alumnos registrados visualizarán
+su fecha como definitiva y no habrá posibilidad de registrarse en
+los bloques cerrados.
+
+%
+\begin{figure}[H]
+~~~~\includegraphics[%
+  scale=0.5]{screenshots/cierre.png}
+
+
+\caption{Cierre de listas de entrega}
+\end{figure}
+
+
+
+\subsection{Menú del alumno}
+
+Si el alumno no está registrado, le aparecerá la opción de registrase
+al ingresar en Moodle:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/alumno_no_registrado.png}
+
+
+\caption{Opción de registro}
+\end{figure}
+
+
+El registro es sencillo: hay que elegir uno de los turnos disponibles
+actualmente y la preferencia:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/registro_alumno.png}
+
+
+\caption{Formulario de registro de alumnos}
+\end{figure}
+Una vez confirmado el proceso de registro, se le presenta la hora
+que le corresponde de forma no definitiva en cuanto vuelve a la página
+principal del curso:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/fecha_no_def_man.png}
+
+
+\caption{Hora de entrega no definitiva}
+\end{figure}
+
+
+Esta fecha puede variar hasta que el profesor cierra la lista, en
+cuyo momento se informará al alumno de que su fecha es definitiva:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/fecha_def_man.png}
+
+
+\caption{Hora de entrega definitiva}
+\end{figure}
+
+
+
+\section{FAQ}
+
+\begin{itemize}
+\item ¿Se puede cambiar el título genérico ''Gestor de turnos''?\\
+Sí, el profesor puede personalizar el título del bloque para cada
+curso:\\
+\emph{Activar edición->Edición(icono)->Título->Guardar cambios}
+\item ¿En que idiomas puedo usar gTurnos?\\
+Actualmente castellano e inglés.
+\item ¿Puedo agregar nuevos bloques de entrega posteriormente?\\
+Sí, se pueden agregar bloques posteriormente, aunque ya haya alumnos
+apuntados en otros bloques. Esto es útil, si por ejemplo necesitamos
+más plazas de las que hemos configurado en un principio.
+\item ¿Existe más documentación sobre la aplicación?\\
+Sí, puedes encontrar toda la documentación sobre gTurnos en la memoria
+de mi PFC:\\
+https://sourceforge.net/project/showfiles.php?group\_id=181240\\
+Además en www.gturnos.sourceforge.net puedes mantenerte informado
+sobre las novedades.
+\end{itemize}
+
+\section{Contacto}
+
+Si vas a usar gTurnos, tienes alguna duda, sugerencia, problema, etc.
+agradecería que me contactaras en david.rozas@gmail.com o dejando
+un comentario en \\
+http://moodle.org/mod/data/view.php?d=13\&rid=571. \\
+¡GRACIAS!.
+
+Esta aplicación y su documentación se distribuye bajo los términos
+de la licencia GNU GENERAL PUBLIC LICENSE (Version 2, June 1991) : 
+
+- http://www.gnu.org/copyleft/gpl.html\#TOC1 (inglés)
+
+- http://gugs.sindominio.net/licencias/gples.html (castellano)
+
+
+\chapter{Manual de uso en inglés}
+
+
+\section{What is gTurnos?}
+
+gTurnos is a block for Moodle, which manages the delivery of turns.
+It considers necessities of teachers and students.\\
+The idea was born to computerize the way of registering in practices
+of the labs at my university: in a sheet on the door.\\
+The problem of the teacher is that the list is not compact, and could
+be infraloaded or overloaded.\\
+About the student, it does not always consider his necessities, for
+instance a student could need a turn in the morning because he works
+in the afternoon.
+
+gTurnos always provides compact lists and, as in queue, those users
+that register before have higher priority.
+
+
+\section{Supported versions}
+
+gTurnos was developed under Moodle 1.6.2, and it was successfully
+tested under the latest exiting versions: 1.6.3 and 1.7.
+
+It requires MySQL and PHP. About PHP versions, there is a version
+of gTurnos to PHP 5 and another one to PHP 4.
+
+
+\section{Installing gTurnos}
+
+The install process of gTurnos is the same as any other block of Moodle:
+
+\begin{itemize}
+\item Uncompress the packet, and copy the directory \emph{gturnos} into
+the directory \emph{blocks} in your Moodle installation.
+\item Access as \emph{admin} in Moodle, and install the block:
+
+\begin{itemize}
+\item Clicking on ''\emph{Admin}'', in previous versions to the 1.7.
+\item Clicking on ''\emph{Notifications}'', in version 1.7 or laters.
+\end{itemize}
+\item The block will be automatically installed. Once the process finishes,
+it shows information about it:\\
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.4]{screenshots/installation.png}
+
+
+\caption{Information after a sucessful installation process}
+\end{figure}
+
+\end{itemize}
+
+\section{Using gTurnos}
+
+Once it is installed, a teacher with edition privileges in a course
+can add an instance:\\
+\emph{Turn editing on->Blocks (Add...)->Turns Manager}
+
+
+\subsection{Teachers menu}
+
+The teachers menu has the next options:
+
+\begin{itemize}
+\item Configure delivery blocks.
+\item See students by registry order.
+\item Delivery list preview.
+\item Close delivery list
+\end{itemize}
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.4]{screenshots/menu_teacher.png}
+
+
+\caption{Teachers menu}
+\end{figure}
+
+
+
+\subsubsection{Configure delivery blocks}
+
+The first step the teacher have to do, is to determine the delivery
+ranks. A form with available options and information about the blocks
+configured at the moment is showed:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.4]{screenshots/configuration_blocks.png}
+
+
+\caption{Configuration of the delivery blocks}
+\end{figure}
+
+
+The more delivery blocks he configures, the more flexibility will
+have the students. The application guarantees that for each block
+ever a compact list will be generated.
+
+
+\subsubsection{Visualization of registered students}
+
+Clicking on ''See students by registry order'', the teacher can
+access to the information about the registering process of students:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/see_students.png}
+
+
+\caption{Information about registering process}
+\end{figure}
+
+
+
+\subsubsection{Delivery list preview}
+
+Accessing to the preview, the teacher can see the distribution of
+turns for all students:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/preview.png}
+
+
+\caption{Delivery list}
+\end{figure}
+
+
+
+\subsubsection{Close delivery list}
+
+When the teacher decides that the inscription time has finished, he
+makes the list definitive clicking on this link.\\
+Once the process is confirmed, the registered students will see their
+dates as definitive, and there will be no possibilities of registering
+on closed blocks.
+
+%
+\begin{figure}[H]
+~~~~\includegraphics[%
+  scale=0.5]{screenshots/closing_list.png}
+
+
+\caption{Closing a delivery list}
+\end{figure}
+
+
+
+\subsection{Students menu}
+
+If the student is not registered, a ''Register'' option is showed
+when he access to Moodle:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/student_no_registered.png}
+
+
+\caption{Register option}
+\end{figure}
+
+
+The registering process is simple: the student have to choose one
+of the available turns and his preference: 
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/student_registering.png}
+
+
+\caption{Registering form for students}
+\end{figure}
+Once the registering process is confirmed, a provisional date is showed
+in the main course page:
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/provisional_date.png}
+
+
+\caption{Provisional date}
+\end{figure}
+
+
+This date can change until the teacher closes the list. At that moment,
+the student will see the date as definitive.
+
+%
+\begin{figure}[H]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\includegraphics[%
+  scale=0.5]{screenshots/definitive_date.png}
+
+
+\caption{Definitive date}
+\end{figure}
+
+
+
+\section{FAQ}
+
+\begin{itemize}
+\item Is it possible to change the generic title ''Turns Manager''?\\
+Yes, a teacher can change the title of the block for each course:\\
+\emph{Turn editing on->Edition(icon)->Title of the block->Save changes}
+\item In how many languages can I use gTurnos?\\
+Currently in Spanish and English.
+\item Can I add new blocks later?\\
+Yes, you can add new blocks later, even if there were students registered
+in another blocks. This is useful, for instance if we need more seats
+than we configured initially.
+\item Can I find more documentation about the application?\\
+Yes, you can find more information about gTurnos in the project documentation:\\
+https://sourceforge.net/project/showfiles.php?group\_id=181240 (in
+Spanish)\\
+Visit www.gturnos.sourceforge.net to be aware about news.
+\end{itemize}
+
+\section{Contact}
+
+If you are using or will use gTurnos, you have any doubt, suggestion,
+problem, ... please, contact me on david.rozas@gmail.com or post a
+message in:\\
+http://moodle.org/mod/data/view.php?d=13\&rid=571\\
+THANKS!.
+
+This application is under the terms of GNU GENERAL PUBLIC LINCESE
+(Version 2, June 1991):
+
+- http://www.gnu.org/copyleft/gpl.html\#TOC1 (English)
+
+- http://gugs.sindominio.net/licencias/gples.html (Spanish)
+
+
+\chapter{GNU Free Documentation License}
+
+\begin{quotation}
+Versión 1.2, Noviembre 2002\\
+
+
+This is an unofficial translation of the GNU Free Documentation License
+into Spanish. It was not published by the Free Software Foundation,
+and does not legally state the distribution terms for documentation
+that uses the GNU FDL 1.2 only the original English text of the GNU
+FDL does that. However, we hope that this translation will help Spanish
+speakers understand the GNU FDL better.\\
+
+
+Ésta es una traducción no oficial de la GNU Free Document License
+a Español (Castellano). No ha sido publicada por la Free Software
+Foundation y no establece legalmente los términos de distribución
+para trabajos que usen la GFDL (sólo el texto de la versión original
+en Inglés de la GFDL lo hace). Sin embargo, esperamos que esta traducción
+ayude los hispanohablantes a entender mejor la GFDL. La versión original
+de la GFDL esta disponible en la Free Software Foundation.\\
+
+
+Esta traducción está basada en una de la versión 1.1 de Igor Támara
+y Pablo Reyes. Sin embargo la responsabilidad de su interpretación
+es de Joaquín Seoane.\\
+
+
+Copyright (C) 2000, 2001, 2002 Free Software Foundation, Inc. 59 Temple
+Place, Suite 330, Boston, MA 02111-1307 USA. Se permite la copia y
+distribución de copias literales de este documento de licencia, pero
+no se permiten cambios%
+\footnote{Ésta es la traducción del Copyright de la Licencia, no es el Copyright
+de esta traducción no autorizada.%
+}.
+
+\eject
+\end{quotation}
+
+\section{PREÁMBULO}
+
+El propósito de esta Licencia es permitir que un manual, libro de
+texto, u otro documento escrito sea libre en el sentido de libertad:
+asegurar a todo el mundo la libertad efectiva de copiarlo y redistribuirlo,
+con o sin modificaciones, de manera comercial o no. En segundo término,
+esta Licencia proporciona al autor y al editor%
+\footnote{La licencia original dice \emph{publisher,} que es, estrictamente,
+quien publica, diferente de \emph{editor}, que es más bien quien prepara
+un texto para publicar. En castellano \emph{editor} se usa para ambas
+cosas.%
+} una manera de obtener reconocimiento por su trabajo, sin que se le
+considere responsable de las modificaciones realizadas por otros.
+
+Esta Licencia es de tipo copyleft, lo que significa que los trabajos
+derivados del documento deben a su vez ser libres en el mismo sentido.
+Complementa la Licencia Pública General de GNU, que es una licencia
+tipo copyleft diseñada para el software libre.
+
+Hemos diseñado esta Licencia para usarla en manuales de software libre,
+ya que el software libre necesita documentación libre: un programa
+libre debe venir con manuales que ofrezcan la mismas libertades que
+el software. Pero esta licencia no se limita a manuales de software;
+puede usarse para cualquier texto, sin tener en cuenta su temática
+o si se publica como libro impreso o no. Recomendamos esta licencia
+principalmente para trabajos cuyo fin sea instructivo o de referencia.
+
+
+\section{APLICABILIDAD Y DEFINICIONES}
+
+Esta Licencia se aplica a cualquier manual u otro trabajo, en cualquier
+soporte, que contenga una nota del propietario de los derechos de
+autor que indique que puede ser distribuido bajo los términos de esta
+Licencia. Tal nota garantiza en cualquier lugar del mundo, sin pago
+de derechos y sin límite de tiempo, el uso de dicho trabajo según
+las condiciones aquí estipuladas. En adelante la palabra Documento
+se referirá a cualquiera de dichos manuales o trabajos. Cualquier
+persona es un licenciatario y será referido como Usted. Usted acepta
+la licencia si copia. modifica o distribuye el trabajo de cualquier
+modo que requiera permiso según la ley de propiedad intelectual.
+
+Una Versión Modificada del Documento significa cualquier trabajo que
+contenga el Documento o una porción del mismo, ya sea una copia literal
+o con modificaciones y/o traducciones a otro idioma.
+
+Una Sección Secundaria es un apéndice con título o una sección preliminar
+del Documento que trata exclusivamente de la relación entre los autores
+o editores y el tema general del Documento (o temas relacionados)
+pero que no contiene nada que entre directamente en dicho tema general
+(por ejemplo, si el Documento es en parte un texto de matemáticas,
+una Sección Secundaria puede no explicar nada de matemáticas). La
+relación puede ser una conexión histórica con el tema o temas relacionados,
+o una opinión legal, comercial, filosófica, ética o política acerca
+de ellos.
+
+Las Secciones Invariantes son ciertas Secciones Secundarias cuyos
+títulos son designados como Secciones Invariantes en la nota que indica
+que el documento es liberado bajo esta Licencia. Si una sección no
+entra en la definición de Secundaria, no puede designarse como Invariante.
+El documento puede no tener Secciones Invariantes. Si el Documento
+no identifica las Secciones Invariantes, es que no las tiene.
+
+Los Textos de Cubierta son ciertos pasajes cortos de texto que se
+listan como Textos de Cubierta Delantera o Textos de Cubierta Trasera
+en la nota que indica que el documento es liberado bajo esta Licencia.
+Un Texto de Cubierta Delantera puede tener como mucho 5 palabras,
+y uno de Cubierta Trasera puede tener hasta 25 palabras.
+
+Una copia Transparente del Documento, significa una copia para lectura
+en máquina, representada en un formato cuya especificación está disponible
+al público en general, apto para que los contenidos puedan ser vistos
+y editados directamente con editores de texto genéricos o (para imágenes
+compuestas por puntos) con programas genéricos de manipulación de
+imágenes o (para dibujos) con algún editor de dibujos ampliamente
+disponible, y que sea adecuado como entrada para formateadores de
+texto o para su traducción automática a formatos adecuados para formateadores
+de texto. Una copia hecha en un formato definido como Transparente,
+pero cuyo marcaje o ausencia de él haya sido diseñado para impedir
+o dificultar modificaciones posteriores por parte de los lectores
+no es Transparente. Un formato de imagen no es Transparente si se
+usa para una cantidad de texto sustancial. Una copia que no es Transparente
+se denomina Opaca.
+
+Como ejemplos de formatos adecuados para copias Transparentes están
+ASCII puro sin marcaje, formato de entrada de Texinfo, formato de
+entrada de \LaTeX{}, SGML o XML usando una DTD disponible públicamente,
+y HTML, PostScript o PDF simples, que sigan los estándares y diseñados
+para que los modifiquen personas. Ejemplos de formatos de imagen transparentes
+son PNG, XCF y JPG. Los formatos Opacos incluyen formatos propietarios
+que pueden ser leídos y editados únicamente en procesadores de palabras
+propietarios, SGML o XML para los cuáles las DTD y/o herramientas
+de procesamiento no estén ampliamente disponibles, y HTML, PostScript
+o PDF generados por algunos procesadores de palabras sólo como salida.
+
+La Portada significa, en un libro impreso, la página de título, más
+las páginas siguientes que sean necesarias para mantener legiblemente
+el material que esta Licencia requiere en la portada. Para trabajos
+en formatos que no tienen página de portada como tal, Portada significa
+el texto cercano a la aparición más prominente del título del trabajo,
+precediendo el comienzo del cuerpo del texto.
+
+Una sección Titulada XYZ significa una parte del Documento cuyo título
+es precisamente XYZ o contiene XYZ entre paréntesis, a continuación
+de texto que traduce XYZ a otro idioma (aquí XYZ se refiere a nombres
+de sección específicos mencionados más abajo, como Agradecimientos,
+Dedicatorias , Aprobaciones o Historia. Conservar el Título de tal
+sección cuando se modifica el Documento significa que permanece una
+sección Titulada XYZ según esta definición%
+\footnote{En sentido estricto esta licencia parece exigir que los títulos sean
+exactamente \emph{Acknowledgements}, \emph{Dedications}, \emph{Endosements}
+e \emph{History}.%
+}.
+
+El Documento puede incluir Limitaciones de Garantía cercanas a la
+nota donde se declara que al Documento se le aplica esta Licencia.
+Se considera que estas Limitaciones de Garantía están incluidas, por
+referencia, en la Licencia, pero sólo en cuanto a limitaciones de
+garantía: cualquier otra implicación que estas Limitaciones de Garantía
+puedan tener es nula y no tiene efecto en el significado de esta Licencia.
+
+
+\section{COPIA LITERAL}
+
+Usted puede copiar y distribuir el Documento en cualquier soporte,
+sea en forma comercial o no, siempre y cuando esta Licencia, las notas
+de copyright y la nota que indica que esta Licencia se aplica al Documento
+se reproduzcan en todas las copias y que usted no añada ninguna otra
+condición a las expuestas en esta Licencia. Usted no puede usar medidas
+técnicas para obstruir o controlar la lectura o copia posterior de
+las copias que usted haga o distribuya. Sin embargo, usted puede aceptar
+compensación a cambio de las copias. Si distribuye un número suficientemente
+grande de copias también deberá seguir las condiciones de la sección
+3.
+
+Usted también puede prestar copias, bajo las mismas condiciones establecidas
+anteriormente, y puede exhibir copias públicamente.
+
+
+\section{COPIADO EN CANTIDAD}
+
+Si publica copias impresas del Documento (o copias en soportes que
+tengan normalmente cubiertas impresas) que sobrepasen las 100, y la
+nota de licencia del Documento exige Textos de Cubierta, debe incluir
+las copias con cubiertas que lleven en forma clara y legible todos
+esos Textos de Cubierta: Textos de Cubierta Delantera en la cubierta
+delantera y Textos de Cubierta Trasera en la cubierta trasera. Ambas
+cubiertas deben identificarlo a Usted clara y legiblemente como editor
+de tales copias. La cubierta debe mostrar el título completo con todas
+las palabras igualmente prominentes y visibles. Además puede añadir
+otro material en las cubiertas. Las copias con cambios limitados a
+las cubiertas, siempre que conserven el título del Documento y satisfagan
+estas condiciones, pueden considerarse como copias literales.
+
+Si los textos requeridos para la cubierta son muy voluminosos para
+que ajusten legiblemente, debe colocar los primeros (tantos como sea
+razonable colocar) en la verdadera cubierta y situar el resto en páginas
+adyacentes.
+
+Si Usted publica o distribuye copias Opacas del Documento cuya cantidad
+exceda las 100, debe incluir una copia Transparente, que pueda ser
+leída por una máquina, con cada copia Opaca, o bien mostrar, en cada
+copia Opaca, una dirección de red donde cualquier usuario de la misma
+tenga acceso por medio de protocolos públicos y estandarizados a una
+copia Transparente del Documento completa, sin material adicional.
+Si usted hace uso de la última opción, deberá tomar las medidas necesarias,
+cuando comience la distribución de las copias Opacas en cantidad,
+para asegurar que esta copia Transparente permanecerá accesible en
+el sitio establecido por lo menos un año después de la última vez
+que distribuya una copia Opaca de esa edición al público (directamente
+o a través de sus agentes o distribuidores).
+
+Se solicita, aunque no es requisito, que se ponga en contacto con
+los autores del Documento antes de redistribuir gran número de copias,
+para darles la oportunidad de que le proporcionen una versión actualizada
+del Documento.
+
+
+\section{MODIFICACIONES}
+
+Puede copiar y distribuir una Versión Modificada del Documento bajo
+las condiciones de las secciones 2 y 3 anteriores, siempre que usted
+libere la Versión Modificada bajo esta misma Licencia, con la Versión
+Modificada haciendo el rol del Documento, por lo tanto dando licencia
+de distribución y modificación de la Versión Modificada a quienquiera
+posea una copia de la misma. Además, debe hacer lo siguiente en la
+Versión Modificada:
+
+\begin{itemize}
+\item A. Usar en la Portada (y en las cubiertas, si hay alguna) un título
+distinto al del Documento y de sus versiones anteriores (que deberían,
+si hay alguna, estar listadas en la sección de Historia del Documento).
+Puede usar el mismo título de versiones anteriores al original siempre
+y cuando quien las publicó originalmente otorgue permiso.
+\item B. Listar en la Portada, como autores, una o más personas o entidades
+responsables de la autoría de las modificaciones de la Versión Modificada,
+junto con por lo menos cinco de los autores principales del Documento
+(todos sus autores principales, si hay menos de cinco), a menos que
+le eximan de tal requisito.
+\item C. Mostrar en la Portada como editor el nombre del editor de la Versión
+Modificada.
+\item D. Conservar todas las notas de copyright del Documento.
+\item E. Añadir una nota de copyright apropiada a sus modificaciones, adyacente
+a las otras notas de copyright.
+\item F. Incluir, inmediatamente después de las notas de copyright, una
+nota de licencia dando el permiso para usar la Versión Modificada
+bajo los términos de esta Licencia, como se muestra en la Adenda al
+final de este documento.
+\item G. Conservar en esa nota de licencia el listado completo de las Secciones
+Invariantes y de los Textos de Cubierta que sean requeridos en la
+nota de Licencia del Documento original.
+\item H. Incluir una copia sin modificación de esta Licencia.
+\item I. Conservar la sección Titulada Historia, conservar su Título y añadirle
+un elemento que declare al menos el título, el año, los nuevos autores
+y el editor de la Versión Modificada, tal como figuran en la Portada.
+Si no hay una sección Titulada Historia en el Documento, crear una
+estableciendo el título, el año, los autores y el editor del Documento,
+tal como figuran en su Portada, añadiendo además un elemento describiendo
+la Versión Modificada, como se estableció en la oración anterior.
+\item J. Conservar la dirección en red, si la hay, dada en el Documento
+para el acceso público a una copia Transparente del mismo, así como
+las otras direcciones de red dadas en el Documento para versiones
+anteriores en las que estuviese basado. Pueden ubicarse en la sección
+Historia. Se puede omitir la ubicación en red de un trabajo que haya
+sido publicado por lo menos cuatro años antes que el Documento mismo,
+o si el editor original de dicha versión da permiso.
+\item K. En cualquier sección Titulada Agradecimientos o Dedicatorias, Conservar
+el Título de la sección y conservar en ella toda la sustancia y el
+tono de los agradecimientos y/o dedicatorias incluidas por cada contribuyente.
+\item L. Conservar todas las Secciones Invariantes del Documento, sin alterar
+su texto ni sus títulos. Números de sección o el equivalente no son
+considerados parte de los títulos de la sección.
+\item M. Borrar cualquier sección titulada Aprobaciones. Tales secciones
+no pueden estar incluidas en las Versiones Modificadas.
+\item N. No cambiar el título de ninguna sección existente a Aprobaciones
+ni a uno que entre en conflicto con el de alguna Sección Invariante.
+\item O. Conservar todas las Limitaciones de Garantía.
+\end{itemize}
+Si la Versión Modificada incluye secciones o apéndices nuevos que
+califiquen como Secciones Secundarias y contienen material no copiado
+del Documento, puede opcionalmente designar algunas o todas esas secciones
+como invariantes. Para hacerlo, añada sus títulos a la lista de Secciones
+Invariantes en la nota de licencia de la Versión Modificada. Tales
+títulos deben ser distintos de cualquier otro título de sección.
+
+Puede añadir una sección titulada Aprobaciones, siempre que contenga
+únicamente aprobaciones de su Versión Modificada por otras fuentes
+--por ejemplo, observaciones de peritos o que el texto ha sido aprobado
+por una organización como la definición oficial de un estándar.
+
+Puede añadir un pasaje de hasta cinco palabras como Texto de Cubierta
+Delantera y un pasaje de hasta 25 palabras como Texto de Cubierta
+Trasera en la Versión Modificada. Una entidad solo puede añadir (o
+hacer que se añada) un pasaje al Texto de Cubierta Delantera y uno
+al de Cubierta Trasera. Si el Documento ya incluye un textos de cubiertas
+añadidos previamente por usted o por la misma entidad que usted representa,
+usted no puede añadir otro; pero puede reemplazar el anterior, con
+permiso explícito del editor que agregó el texto anterior.
+
+Con esta Licencia ni los autores ni los editores del Documento dan
+permiso para usar sus nombres para publicidad ni para asegurar o implicar
+aprobación de cualquier Versión Modificada.
+
+
+\section{COMBINACIÓN DE DOCUMENTOS}
+
+Usted puede combinar el Documento con otros documentos liberados bajo
+esta Licencia, bajo los términos definidos en la sección 4 anterior
+para versiones modificadas, siempre que incluya en la combinación
+todas las Secciones Invariantes de todos los documentos originales,
+sin modificar, listadas todas como Secciones Invariantes del trabajo
+combinado en su nota de licencia. Así mismo debe incluir la Limitación
+de Garantía.
+
+El trabajo combinado necesita contener solamente una copia de esta
+Licencia, y puede reemplazar varias Secciones Invariantes idénticas
+por una sola copia. Si hay varias Secciones Invariantes con el mismo
+nombre pero con contenidos diferentes, haga el título de cada una
+de estas secciones único añadiéndole al final del mismo, entre paréntesis,
+el nombre del autor o editor original de esa sección, si es conocido,
+o si no, un número único. Haga el mismo ajuste a los títulos de sección
+en la lista de Secciones Invariantes de la nota de licencia del trabajo
+combinado.
+
+En la combinación, debe combinar cualquier sección Titulada Historia
+de los documentos originales, formando una sección Titulada Historia;
+de la misma forma combine cualquier sección Titulada Agradecimientos,
+y cualquier sección Titulada Dedicatorias. Debe borrar todas las secciones
+tituladas Aprobaciones.
+
+
+\section{COLECCIONES DE DOCUMENTOS}
+
+Puede hacer una colección que conste del Documento y de otros documentos
+liberados bajo esta Licencia, y reemplazar las copias individuales
+de esta Licencia en todos los documentos por una sola copia que esté
+incluida en la colección, siempre que siga las reglas de esta Licencia
+para cada copia literal de cada uno de los documentos en cualquiera
+de los demás aspectos.
+
+Puede extraer un solo documento de una de tales colecciones y distribuirlo
+individualmente bajo esta Licencia, siempre que inserte una copia
+de esta Licencia en el documento extraído, y siga esta Licencia en
+todos los demás aspectos relativos a la copia literal de dicho documento.
+
+
+\section{AGREGACIÓN CON TRABAJOS INDEPENDIENTES}
+
+Una recopilación que conste del Documento o sus derivados y de otros
+documentos o trabajos separados e independientes, en cualquier soporte
+de almacenamiento o distribución, se denomina un agregado si el copyright
+resultante de la compilación no se usa para limitar los derechos de
+los usuarios de la misma más allá de lo que los de los trabajos individuales
+permiten. Cuando el Documento se incluye en un agregado, esta Licencia
+no se aplica a otros trabajos del agregado que no sean en sí mismos
+derivados del Documento.
+
+Si el requisito de la sección 3 sobre el Texto de Cubierta es aplicable
+a estas copias del Documento y el Documento es menor que la mitad
+del agregado entero, los Textos de Cubierta del Documento pueden colocarse
+en cubiertas que enmarquen solamente el Documento dentro del agregado,
+o el equivalente electrónico de las cubiertas si el documento está
+en forma electrónica. En caso contrario deben aparecer en cubiertas
+impresas enmarcando todo el agregado.
+
+
+\section{TRADUCCIÓN}
+
+La Traducción es considerada como un tipo de modificación, por lo
+que usted puede distribuir traducciones del Documento bajo los términos
+de la sección 4. El reemplazo las Secciones Invariantes con traducciones
+requiere permiso especial de los dueños de derecho de autor, pero
+usted puede añadir traducciones de algunas o todas las Secciones Invariantes
+a las versiones originales de las mismas. Puede incluir una traducción
+de esta Licencia, de todas las notas de licencia del documento, así
+como de las Limitaciones de Garantía, siempre que incluya también
+la versión en Inglés de esta Licencia y las versiones originales de
+las notas de licencia y Limitaciones de Garantía. En caso de desacuerdo
+entre la traducción y la versión original en Inglés de esta Licencia,
+la nota de licencia o la limitación de garantía, la versión original
+en Inglés prevalecerá.
+
+Si una sección del Documento está Titulada Agradecimientos, Dedicatorias
+o Historia el requisito (sección 4) de Conservar su Título (Sección
+1) requerirá, típicamente, cambiar su título.
+
+
+\section{TERMINACIÓN}
+
+Usted no puede copiar, modificar, sublicenciar o distribuir el Documento
+salvo por lo permitido expresamente por esta Licencia. Cualquier otro
+intento de copia, modificación, sublicenciamiento o distribución del
+Documento es nulo, y dará por terminados automáticamente sus derechos
+bajo esa Licencia. Sin embargo, los terceros que hayan recibido copias,
+o derechos, de usted bajo esta Licencia no verán terminadas sus licencias,
+siempre que permanezcan en total conformidad con ella.
+
+
+\section{REVISIONES FUTURAS DE ESTA LICENCIA}
+
+De vez en cuando la Free Software Foundation puede publicar versiones
+nuevas y revisadas de la Licencia de Documentación Libre GNU. Tales
+versiones nuevas serán similares en espíritu a la presente versión,
+pero pueden diferir en detalles para solucionar nuevos problemas o
+intereses. Vea http://www.gnu.org/copyleft/.
+
+Cada versión de la Licencia tiene un número de versión que la distingue.
+Si el Documento especifica que se aplica una versión numerada en particular
+de esta licencia o cualquier versión posterior, usted tiene la opción
+de seguir los términos y condiciones de la versión especificada o
+cualquiera posterior que haya sido publicada (no como borrador) por
+la Free Software Foundation. Si el Documento no especifica un número
+de versión de esta Licencia, puede escoger cualquier versión que haya
+sido publicada (no como borrador) por la Free Software Foundation.
+
+
+\section{ADENDA: Cómo usar esta Licencia en sus documentos}
+
+Para usar esta licencia en un documento que usted haya escrito, incluya
+una copia de la Licencia en el documento y ponga el siguiente copyright
+y nota de licencia justo después de la página de título:
+
+\begin{quotation}
+Copyright (c) AÑO SU NOMBRE. Se otorga permiso para copiar, distribuir
+y/o modificar este documento bajo los términos de la Licencia de Documentación
+Libre de GNU, Versión 1.2 o cualquier otra versión posterior publicada
+por la Free Software Foundation; sin Secciones Invariantes ni Textos
+de Cubierta Delantera ni Textos de Cubierta Trasera. Una copia de
+la licencia está incluida en la sección titulada GNU Free Documentation
+License.
+\end{quotation}
+Si tiene Secciones Invariantes, Textos de Cubierta Delantera y Textos
+de Cubierta Trasera, reemplace la frase \emph{{}``sin ... Trasera''}
+por esto:
+
+\begin{quotation}
+siendo las Secciones Invariantes LISTE SUS TÍTULOS, siendo los Textos
+de Cubierta Delantera LISTAR, y siendo sus Textos de Cubierta Trasera
+LISTAR.
+\end{quotation}
+Si tiene Secciones Invariantes sin Textos de Cubierta o cualquier
+otra combinación de los tres, mezcle ambas alternativas para adaptarse
+a la situación.
+
+Si su documento contiene ejemplos de código de programa no triviales,
+recomendamos liberar estos ejemplos en paralelo bajo la licencia de
+software libre que usted elija, como la Licencia Pública General de
+GNU (GNU General Public License), para permitir su uso en software
+libre. 
+\end{document}
