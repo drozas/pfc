@@ -1,5 +1,4 @@
-"gTurnos: módulo gestor del reparto de turnos bajo
-Moodle"
+"gTurnos: módulo gestor del reparto de turnos bajo Moodle"
 =============================================================================
 
 - Author: David Rozas Domingo
