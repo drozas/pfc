@@ -13,6 +13,7 @@ Repository contents:
 - Source code of gTurnos for PHP 5 in gturnos_php5 folder.
 - Report (pdf + source in Latex) in folder report.
 - Slides (pdf + source in Latex) of the presentation.
+- HTML code of the web at gturnos.sourceforget.net (gturnos_web_static).
 
 
 More information:
