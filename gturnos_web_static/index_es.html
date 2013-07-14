@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>gTurnos</title>
+
+<meta name="description" content="gTurnos: a block for Moodle which manages the delivery of turns. " />
+<meta name="keywords" content="GTURNOS MOODLE TURNOS BLOQUE TURN TURNS TURNO BLOCK DAVID ROZAS DOMINGO" />
+<link rel="stylesheet" href="__files/style.css" type="text/css" media="screen" />
+<link rel="icon" href="__files/favicon.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="__files/favicon.ico" type="image/x-icon" /></head>
+<body>
+<!-- 2007 gTurnos. David Rozas Domingo (david.rozas@gmail.com).
+The contents of this website are under the Creative Commons license -->
+
+<div class="main">
+<div class="container">
+<div class="gfx"><img style="width: 600px; height: 265px;" alt="gturnos-logo" src="__files/gturnos_logo.gif" /></div>
+
+<!--drozas: Add for choosing language-->
+<div class="languages">
+<p align="right"> <b><a href="index.html">Inglés</a>
+| <a href="index_es.html">Español</a></b>
+</p>
+</div>
+
+<!--drozas: Main menu-->
+<div class="menu">
+	<a href="https://sourceforge.net/projects/gturnos/"><span>Descargar gTurnos</span></a> 
+	<a href="https://sourceforge.net/project/showfiles.php?group_id=181240&amp;package_id=217632"><span>Documentación</span></a>
+	<a href="http://moodle.org/mod/data/view.php?d=13&amp;rid=571"><span>gTurnos en Moodle</span></a> 
+	<a href="mailto:david.rozas@gmail.com"><span>Contacto</span></a>
+</div>
+
+
+<div class="content">
+<div class="item">
+
+<div class="entry">
+<p><b><i>¿Qué es gTurnos? </i></b></p>
+<p>gTurnos es un bloque para <a target="_blank" href="http://moodle.org/">Moodle,</a> que gestiona el reparto de turnos teniendo en cuenta tanto las necesidades del profesor como las del alumno.<br />
+La idea surge de la necesidad de informatizar el proceso de reparto de turnos para la realización de los exámenes presenciales en algunas de
+las asignaturas de mi <a target="_blank" href="http://www.urjc.es/">universidad.</a>
+Hasta ahora se hacía de forma manual, colocando hojas en las puertas de los laboratorios, con lo que, además de la evidente incomodidad del
+proceso, las listas no resultaban compactas y con frecuencia quedaban descompensadas.<br />
+Con gTurnos las listas generadas son siempre compactas, y se atienden las preferencias de los usuarios asignando prioridad por orden de
+inscripción, como en una <i>cola</i>.</p>
+
+
+<p><b><i>¿Cómo funciona?</i></b></p>
+<p>El funcionamiento de gTurnos es sencillo. El profesor configura el periodo total de atención a los alumnos a través de la interfaz web:</p>
+
+<!--drozas: imagen redimensionada, añadido link a imagen en tamaño original-->
+<div style="text-align: center;">
+<a target="_blank" href="__files/configurar_bloques_big.png"><img alt="configurando-bloques" title="Pincha para ver la imagen en su tamaño original" src="__files/configurar_bloques.png" /></a></div>
+
+
+<p>Posteriormente los alumnos se registran en los rangos disponibles, eligiendo preferencia (lo más pronto o lo más tarde posible). El
+algoritmo calcula dinámicamente las horas de entrega, y el alumno recibe una fecha provisional en cuanto completa el registro.</p>
+
+<div style="text-align: center;">
+<img alt="registro-alumno" src="__files/registro_alumno.png" /> </div>
+
+<p>El menú del profesor permite visualizar la lista actual con todos los alumnos, sus preferencias, horas de registro, agregar nuevos bloques, etc.</p>
+
+<div style="text-align: center;">
+<img alt="vista-previa" src="__files/vista_previa.png"  />
+</div>
+
+<p>Una vez el profesor considera que la lista es definitiva, simplemente la cierra a través del menú. En ese momento los alumnos ven su fecha como definitiva.</p>
+
+
+
+<p><i><b> Versiones soportadas:</b></i><br />
+gTurnos se desarrolló para la versión 1.6.2 de Moodle, y se ha probado con éxito en las versiones superiores lanzadas hasta el día de hoy: 1.6.3 y 1.7.<br />
+Requiere MySQL y PHP. En cuanto a las versiones de PHP, existe una versión de gTurnos para PHP 5 y otra para PHP 4.</p>
+
+
+
+<p><i><b>Descarga: </b></i></p>
+<p>Puedes <a title="Proyecto alojado en sourceforge" href="https://sourceforge.net/projects/gturnos/">descargar gTurnos (GPL)</a> a través del enlace superior, que te llevará al proyecto en sourceforge.net.<br />
+Puedes usar gTurnos en inglés o en castellano. El paquete incluye igualmente manuales de uso en sendos idiomas.<br />
+Para más información sobre el proyecto, puedes <a target="_blank" href="https://sourceforge.net/project/showfiles.php?group_id=181240&amp;package_id=217632">descargar la memoria de mi PFC</a> (bajo licencia GFDL).</p>
+
+
+
+
+<p><i><b>Contacto: </b></i></p>
+<p>Si estás utilizando o vas a utilizar gTurnos, tienes alguna duda, propuesta, comentario… agradecería mucho que te pusieras en contacto conmigo <a href="mailto:david.rozas@gmail.com">escribiéndome un correo a david.rozas@gmail.com</a>. ¡Gracias!.<br />
+¡Espero que gTurnos pueda serte útil!.</p>
+
+
+
+<p><i><b>Agradecimientos:</b></i></p>
+<p>Muchas gracias a Ismael Casado, por ayudarme con la traducción a inglés; y a Jose Manuel Sevilleja, por ese logo tan chulo. Asímismo agredecer su ayuda a José Centeno (el tutor del PFC), y a toda la comunidad de Moodle.
+</p>
+
+
+
+<!--drozas: Page info -->
+<div class="footer"> 2007 <a href="http://gturnos.sourceforge.net/">gTurnos</a>. <a href="mailto:david.rozas@gmail.com">David Rozas.</a> <br />
+Los contenidos de esta web están bajo licencia <a href="http://creativecommons.org/licenses/by/2.5/es/deed.en">Creative Commons</a>. <br />
+
+<p align="right"><a href="http://sourceforge.net/"><img src="__files/sflogo.png" alt="SourceForge.net Logo" border="0" height="31" width="88" /></a></p>
+</div>
+<!--drozas: Google Analytics script-->
+<script src="__files/urchin.js" type="text/javascript">
+</script>
+<script type="text/javascript">
+_uacct = "UA-1211616-1";
+urchinTracker();
+</script>
+</div>
+</div>
+</div>
+</div>
+</body></html>
